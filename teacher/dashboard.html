@@ -1,0 +1,141 @@
+<!DOCTYPE html><html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة المدرس | منصة التفوق</title><style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ font-family:Arial,sans-serif;
+ background:#0b1220;
+ color:#fff;
+ padding:20px;
+}
+.container{max-width:1100px;margin:auto}
+.header{
+ background:linear-gradient(135deg,#155eef,#7138e8);
+ padding:30px;
+ border-radius:22px;
+ margin-bottom:25px;
+}
+.header h1{margin:0 0 10px}
+.header p{margin:0;opacity:.85}
+.badge{
+ display:inline-block;
+ background:#ffffff25;
+ padding:8px 15px;
+ border-radius:20px;
+ margin-top:15px;
+}
+.grid{
+ display:grid;
+ grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+ gap:18px;
+}
+.card{
+ background:#172235;
+ border:1px solid #293950;
+ border-radius:18px;
+ padding:23px;
+ text-decoration:none;
+ color:white;
+ transition:.2s;
+}
+.card:active{transform:scale(.97)}
+.icon{font-size:35px}
+.card h3{margin:15px 0 8px}
+.card p{color:#a9b8cc;font-size:14px;line-height:1.7}
+.logout{
+ margin-top:25px;
+ padding:13px 25px;
+ border:0;
+ border-radius:12px;
+ background:#dc3545;
+ color:white;
+ font-size:16px;
+ cursor:pointer;
+}
+#loading{text-align:center;margin-top:100px}
+#error{
+ display:none;
+ background:#4b1820;
+ padding:20px;
+ border-radius:15px;
+ text-align:center;
+}
+</style></head><body><div id="loading">جاري التحقق من حساب المدرس...</div><div id="error"></div><main class="container" id="app" hidden><header class="header">
+<h1>👨‍🏫 لوحة تحكم المدرس</h1>
+<p>منصة التفوق للدراسات الاجتماعية</p>
+<div class="badge">⭐ حساب المدرس الرئيسي</div>
+</header><h2>إدارة المنصة</h2><section class="grid"><a class="card" href="create-exam.html">
+<div class="icon">📝</div>
+<h3>إنشاء امتحان</h3>
+<p>إنشاء امتحانات جديدة وإضافة الأسئلة والإجابات.</p>
+</a><a class="card" href="manage-exams.html">
+<div class="icon">📚</div>
+<h3>إدارة الامتحانات</h3>
+<p>عرض الامتحانات وتعديلها ونشرها.</p>
+</a><a class="card" href="results.html">
+<div class="icon">📊</div>
+<h3>نتائج الطلاب</h3>
+<p>متابعة درجات الطلاب ومحاولاتهم.</p>
+</a><a class="card" href="../pages/lessons.html">
+<div class="icon">🎓</div>
+<h3>الدروس</h3>
+<p>الانتقال إلى صفحة الدروس الحالية.</p>
+</a><a class="card" href="../pages/announcements.html">
+<div class="icon">📢</div>
+<h3>الإعلانات</h3>
+<p>عرض إعلانات المنصة الحالية.</p>
+</a></section><button class="logout" id="logout">تسجيل الخروج</button>
+
+</main><script type="module">
+
+import {auth} from "../firebase-config.js";
+
+import {
+onAuthStateChanged,
+signOut
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+const TEACHER_UID = "BjZsimAIgIUxSJDI8Z3K9huOO012";
+
+const loading = document.getElementById("loading");
+const app = document.getElementById("app");
+const error = document.getElementById("error");
+
+onAuthStateChanged(auth, user => {
+
+if(!user){
+location.replace("../login.html");
+return;
+}
+
+if(user.uid !== TEACHER_UID){
+
+loading.hidden = true;
+error.style.display = "block";
+error.textContent = "ليس لديك صلاحية الدخول إلى لوحة المدرس.";
+
+return;
+
+}
+
+loading.hidden = true;
+app.hidden = false;
+
+});
+
+document.getElementById("logout").addEventListener("click",async()=>{
+
+try{
+await signOut(auth);
+location.replace("../login.html");
+}catch(e){
+alert("تعذر تسجيل الخروج");
+}
+
+});
+
+</script></body>
+</html>
