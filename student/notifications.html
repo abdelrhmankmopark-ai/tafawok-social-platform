@@ -1,0 +1,427 @@
+<!DOCTYPE html><html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الإشعارات | منصة التفوق</title><style>
+*{box-sizing:border-box}
+
+body{
+ margin:0;
+ padding:18px;
+ font-family:Arial,sans-serif;
+ background:#0b1220;
+ color:white;
+}
+
+.container{
+ max-width:850px;
+ margin:25px auto;
+}
+
+.header{
+ padding:25px;
+ border-radius:20px;
+ background:linear-gradient(135deg,#155eef,#7138e8);
+ margin-bottom:22px;
+}
+
+.header h1{margin:0 0 10px}
+
+.header p{line-height:1.7;margin:0}
+
+.actions{
+ display:flex;
+ gap:10px;
+ flex-wrap:wrap;
+ margin-bottom:20px;
+}
+
+button{
+ border:0;
+ padding:12px 17px;
+ border-radius:10px;
+ cursor:pointer;
+ font-size:14px;
+}
+
+.back{
+ background:#263950;
+ color:white;
+}
+
+.mark-all{
+ background:#155eef;
+ color:white;
+}
+
+.notification{
+ display:block;
+ padding:18px;
+ margin-bottom:13px;
+ border-radius:16px;
+ background:#172235;
+ border:1px solid #293950;
+ color:white;
+ text-decoration:none;
+ position:relative;
+}
+
+.notification.unread{
+ border-right:5px solid #3985ff;
+ background:#1b2b43;
+}
+
+.notification h3{
+ margin:0 0 10px;
+ font-size:18px;
+}
+
+.notification p{
+ color:#c3d0e2;
+ line-height:1.7;
+ margin:0 0 12px;
+}
+
+.meta{
+ display:flex;
+ justify-content:space-between;
+ gap:10px;
+ flex-wrap:wrap;
+ color:#91a7c5;
+ font-size:12px;
+}
+
+.type{
+ display:inline-block;
+ padding:5px 10px;
+ border-radius:20px;
+ background:#ffffff17;
+ margin-bottom:12px;
+ font-size:12px;
+}
+
+.unread-label{
+ color:#69a5ff;
+ font-size:12px;
+}
+
+.empty{
+ text-align:center;
+ padding:35px 15px;
+ background:#172235;
+ border-radius:16px;
+ color:#c3d0e2;
+}
+
+#loading{
+ text-align:center;
+ padding:50px 10px;
+}
+
+#error{
+ display:none;
+ background:#632b35;
+ padding:15px;
+ border-radius:12px;
+ margin-bottom:15px;
+ line-height:1.7;
+}
+
+@media(max-width:480px){
+ body{padding:12px}
+ .container{margin:12px auto}
+ .header{padding:20px}
+}
+</style></head><body><main class="container"><header class="header">
+<h1>🔔 مركز الإشعارات</h1>
+<p>تابع أحدث الإعلانات والدروس والامتحانات في منصة التفوق.</p>
+</header><div class="actions">
+<button class="back" onclick="location.href='dashboard.html'">
+⬅ العودة للوحة الطالب
+</button><button class="mark-all" id="markAll">
+تحديد الكل كمقروء
+</button>
+</div><div id="error"></div>
+<div id="loading">جاري تحميل الإشعارات...</div>
+<section id="notifications"></section></main><script type="module">
+
+import {auth,db} from "../firebase-config.js";
+
+import {
+onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+import {
+doc,
+getDoc,
+getDocs,
+collection,
+query,
+where
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
+const loading=document.getElementById("loading");
+const container=document.getElementById("notifications");
+const errorBox=document.getElementById("error");
+const markAllBtn=document.getElementById("markAll");
+
+let currentUser=null;
+let allNotifications=[];
+
+function readKey(){
+return "tafawok_read_notifications_"+currentUser.uid;
+}
+
+function getReadItems(){
+try{
+return JSON.parse(localStorage.getItem(readKey())||"[]");
+}catch{
+return [];
+}
+}
+
+function saveReadItems(items){
+localStorage.setItem(readKey(),JSON.stringify(items));
+}
+
+function getDate(timestamp){
+
+if(!timestamp)return "التاريخ غير متاح";
+
+try{
+const date=timestamp.toDate
+?timestamp.toDate()
+:new Date(timestamp);
+
+if(isNaN(date.getTime()))return "التاريخ غير متاح";
+
+return date.toLocaleString("ar-EG");
+
+}catch{
+return "التاريخ غير متاح";
+}
+
+}
+
+function sortDate(timestamp){
+
+if(!timestamp)return 0;
+
+try{
+return timestamp.toDate
+?timestamp.toDate().getTime()
+:new Date(timestamp).getTime();
+}catch{
+return 0;
+}
+
+}
+
+async function loadNotifications(){
+
+loading.hidden=false;
+container.innerHTML="";
+errorBox.style.display="none";
+
+try{
+
+const [announcementsSnap,lessonsSnap,examsSnap]=await Promise.all([
+
+getDocs(collection(db,"announcements")),
+
+getDocs(collection(db,"lessons")),
+
+getDocs(query(
+collection(db,"exams"),
+where("isPublished","==",true)
+))
+
+]);
+
+allNotifications=[];
+
+announcementsSnap.forEach(item=>{
+
+const data=item.data();
+
+allNotifications.push({
+id:"announcement_"+item.id,
+type:"announcement",
+icon:"📢",
+label:"إعلان جديد",
+title:data.title||"إعلان جديد",
+description:data.content||"",
+date:data.createdAt,
+link:"announcements.html"
+});
+
+});
+
+lessonsSnap.forEach(item=>{
+
+const data=item.data();
+
+allNotifications.push({
+id:"lesson_"+item.id,
+type:"lesson",
+icon:"📚",
+label:"درس جديد",
+title:data.title||"درس جديد",
+description:data.description||"",
+date:data.createdAt,
+link:"lessons.html"
+});
+
+});
+
+examsSnap.forEach(item=>{
+
+const data=item.data();
+
+allNotifications.push({
+id:"exam_"+item.id,
+type:"exam",
+icon:"📝",
+label:"امتحان جديد",
+title:data.title||"امتحان جديد",
+description:data.description||"",
+date:data.createdAt,
+link:"exams.html"
+});
+
+});
+
+allNotifications.sort((a,b)=>sortDate(b.date)-sortDate(a.date));
+
+loading.hidden=true;
+
+renderNotifications();
+
+}catch(err){
+
+console.error(err);
+
+loading.hidden=true;
+errorBox.style.display="block";
+errorBox.textContent="حدث خطأ أثناء تحميل الإشعارات. تأكد من اتصال الإنترنت وصلاحيات Firestore.";
+
+}
+
+}
+
+function renderNotifications(){
+
+container.innerHTML="";
+
+if(allNotifications.length===0){
+
+container.innerHTML=
+'<div class="empty">🔔 لا توجد إشعارات حتى الآن.</div>';
+
+return;
+
+}
+
+const readItems=getReadItems();
+
+allNotifications.forEach(item=>{
+
+const isRead=readItems.includes(item.id);
+
+const card=document.createElement("a");
+
+card.className="notification"+(isRead?"":" unread");
+card.href=item.link;
+
+const type=document.createElement("span");
+type.className="type";
+type.textContent=item.icon+" "+item.label;
+
+const title=document.createElement("h3");
+title.textContent=item.title;
+
+const description=document.createElement("p");
+description.textContent=item.description||"لا يوجد وصف إضافي.";
+
+const meta=document.createElement("div");
+meta.className="meta";
+
+const date=document.createElement("span");
+date.textContent=getDate(item.date);
+
+const status=document.createElement("span");
+status.className="unread-label";
+status.textContent=isRead?"مقروء":"● جديد";
+
+meta.appendChild(date);
+meta.appendChild(status);
+
+card.appendChild(type);
+card.appendChild(title);
+card.appendChild(description);
+card.appendChild(meta);
+
+card.addEventListener("click",()=>{
+
+const currentRead=getReadItems();
+
+if(!currentRead.includes(item.id)){
+currentRead.push(item.id);
+saveReadItems(currentRead);
+}
+
+});
+
+container.appendChild(card);
+
+});
+
+}
+
+markAllBtn.addEventListener("click",()=>{
+
+if(!currentUser)return;
+
+saveReadItems(allNotifications.map(item=>item.id));
+
+renderNotifications();
+
+});
+
+onAuthStateChanged(auth,async(user)=>{
+
+if(!user){
+location.replace("../login.html");
+return;
+}
+
+currentUser=user;
+
+try{
+
+const studentSnap=await getDoc(doc(db,"students",user.uid));
+
+if(!studentSnap.exists()||
+studentSnap.data().status==="disabled"){
+
+location.replace("../login.html");
+return;
+
+}
+
+await loadNotifications();
+
+}catch(err){
+
+console.error(err);
+
+loading.hidden=true;
+errorBox.style.display="block";
+errorBox.textContent="تعذر التحقق من حساب الطالب.";
+
+}
+
+});
+
+</script></body>
+</html>
