@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>حل الامتحان | منصة التفوق</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 18px;
+      background: #0f172a;
+      color: white;
+    }
+
+    .container {
+      max-width: 850px;
+      margin: auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: #38bdf8;
+      font-size: 23px;
+    }
+
+    #timer {
+      background: #7f1d1d;
+      color: white;
+      padding: 13px 20px;
+      border-radius: 12px;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .question {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    .question h3 {
+      line-height: 1.7;
+      color: #38bdf8;
+    }
+
+    .option {
+      display: block;
+      background: #334155;
+      padding: 14px;
+      border-radius: 10px;
+      margin: 10px 0;
+      cursor: pointer;
+      line-height: 1.6;
+    }
+
+    .option input {
+      margin-left: 8px;
+      accent-color: #38bdf8;
+    }
+
+    .option:has(input:checked) {
+      background: #164e63;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      background: #16a34a;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      cursor: pointer;
+      margin: 20px 0;
+    }
+
+    .submit-btn:disabled {
+      background: #64748b;
+      cursor: not-allowed;
+    }
+
+    #message {
+      text-align: center;
+      color: #facc15;
+      margin: 20px 0;
+      line-height: 1.8;
+    }
+
+    .result {
+      background: #14532d;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <header>
+    <h1 id="examTitle">الامتحان</h1>
+    <div id="timer">--:--</div>
+  </header>
+
+  <div id="message">جارٍ تجهيز الامتحان...</div>
+
+  <div id="questions"></div>
+
+  <button id="submitBtn" class="submit-btn" disabled>
+    تسليم الامتحان
+  </button>
+
+</div>
+
+<script type="module">
+
+import { auth, db } from "../firebase-config.js";
+
+import {
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
+
+const message = document.getElementById("message");
+const questionsBox = document.getElementById("questions");
+const timerBox = document.getElementById("timer");
+const submitBtn = document.getElementById("submitBtn");
+const examTitle = document.getElementById("examTitle");
+
+const examId = new URLSearchParams(location.search).get("id");
+
+let user = null;
+let exam = null;
+let attemptRef = null;
+let answers = {};
+let endTime = 0;
+let timerInterval = null;
+let saving = false;
+let submitted = false;
+let submitting = false;
+
+
+onAuthStateChanged(auth, async (currentUser) => {
+
+  if (!currentUser) {
+    location.href = "../login.html";
+    return;
+  }
+
+  user = currentUser;
+
+  if (!examId) {
+    message.textContent = "رابط الامتحان غير صحيح.";
+    submitBtn.disabled = true;
+    return;
+  }
+
+  await initializeExam();
+
+});
+
+
+async function initializeExam() {
+
+  try {
+
+    message.textContent = "جارٍ تحميل بيانات الامتحان...";
+
+    const examRef = doc(db, "exams", examId);
+    attemptRef = doc(
+      db,
+      "examAttempts",
+      user.uid + "_" + examId
+    );
+
+    const examSnapshot = await getDoc(examRef);
+
+    if (!examSnapshot.exists()) {
+      throw new Error("الامتحان غير موجود.");
+    }
+
+    exam = examSnapshot.data();
+
+    if (exam.isPublished !== true) {
+      throw new Error("هذا الامتحان غير منشور.");
+    }
+
+    if (!Array.isArray(exam.questions) ||
+        exam.questions.length === 0) {
+      throw new Error("لا توجد أسئلة في هذا الامتحان.");
+    }
+
+    examTitle.textContent = exam.title || "الامتحان";
+
+    const attemptSnapshot = await getDoc(attemptRef);
+
+    if (attemptSnapshot.exists()) {
+
+      const attempt = attemptSnapshot.data();
+
+      if (attempt.studentId !== user.uid ||
+          attempt.examId !== examId) {
+        throw new Error("بيانات المحاولة غير صحيحة.");
+      }
+
+      if (attempt.status === "submitted") {
+
+        submitted = true;
+        showSubmitted();
+
+        return;
+      }
+
+      if (attempt.status !== "inProgress") {
+        throw new Error("حالة المحاولة غير معروفة.");
+      }
+
+      answers = attempt.answers || {};
+
+      if (!attempt.startedAt ||
+          typeof attempt.startedAt.toMillis !== "function") {
+        throw new Error("تعذر قراءة وقت بداية الامتحان.");
+      }
+
+      startTimer(attempt.startedAt.toMillis());
+
+    } else {
+
+      const duration = Number(
+        exam.durationMinutes || exam.duration || 0
+      );
+
+      if (!Number.isFinite(duration) ||
+          duration < 1 ||
+          duration > 300) {
+        throw new Error("مدة الامتحان غير صحيحة.");
+      }
+
+      await setDoc(attemptRef, {
+        studentId: user.uid,
+        examId: examId,
+        answers: {},
+        status: "inProgress",
+        startedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      const newAttempt = await getDoc(attemptRef);
+
+      if (!newAttempt.exists() ||
+          !newAttempt.data().startedAt) {
+        throw new Error("تعذر تسجيل بداية الامتحان.");
+      }
+
+      startTimer(newAttempt.data().startedAt.toMillis());
+
+    }
+
+    renderQuestions();
+
+    message.textContent = "اختر إجابة كل سؤال.";
+
+    submitBtn.disabled = false;
+
+  } catch (error) {
+
+    console.error(error);
+
+    message.textContent = error.message ||
+      "حدث خطأ أثناء تجهيز الامتحان.";
+
+    submitBtn.disabled = true;
+
+  }
+
+}
+
+
+function renderQuestions() {
+
+  questionsBox.innerHTML = "";
+
+  exam.questions.forEach((question, index) => {
+
+    const card = document.createElement("div");
+    card.className = "question";
+
+    const heading = document.createElement("h3");
+    heading.textContent =
+      (index + 1) + ". " + question.text;
+
+    card.appendChild(heading);
+
+    if (!Array.isArray(question.options) ||
+        question.options.length !== 4) {
+      throw new Error(
+        "السؤال رقم " + (index + 1) +
+        " لا يحتوي على أربعة اختيارات."
+      );
+    }
+
+    question.options.forEach((option, optionIndex) => {
+
+      const label = document.createElement("label");
+      label.className = "option";
+
+      const radio = document.createElement("input");
+
+      radio.type = "radio";
+      radio.name = "question_" + question.id;
+      radio.value = optionIndex;
+
+      radio.checked =
+        Number(answers[question.id]) === optionIndex;
+
+      radio.disabled = submitted;
+
+      radio.addEventListener("change", async () => {
+
+        answers[question.id] = optionIndex;
+
+        await saveAnswers();
+
+      });
+
+      label.appendChild(radio);
+      label.appendChild(
+        document.createTextNode(option)
+      );
+
+      card.appendChild(label);
+
+    });
+
+    questionsBox.appendChild(card);
+
+  });
+
+}
+
+
+async function saveAnswers() {
+
+  if (saving || submitted || submitting) {
+    return;
+  }
+
+  saving = true;
+  message.textContent = "جارٍ حفظ إجابتك...";
+
+  try {
+
+    await updateDoc(attemptRef, {
+      answers: answers,
+      updatedAt: serverTimestamp()
+    });
+
+    message.textContent = "تم حفظ إجاباتك.";
+
+  } catch (error) {
+
+    console.error(error);
+
+    message.textContent =
+      "تعذر حفظ الإجابة. تحقق من اتصال الإنترنت.";
+
+  } finally {
+
+    saving = false;
+
+  }
+
+}
+
+
+function startTimer(startedAt) {
+
+  const duration = Number(
+    exam.durationMinutes || exam.duration
+  );
+
+  endTime = startedAt + duration * 60 * 1000;
+
+  updateTimer();
+
+  timerInterval = setInterval(updateTimer, 1000);
+
+}
+
+
+function updateTimer() {
+
+  const remaining = Math.max(
+    0,
+    Math.ceil((endTime - Date.now()) / 1000)
+  );
+
+  const minutes = Math.floor(remaining / 60);
+  const seconds = remaining % 60;
+
+  timerBox.textContent =
+    String(minutes).padStart(2, "0") + ":" +
+    String(seconds).padStart(2, "0");
+
+  if (remaining <= 0) {
+
+    clearInterval(timerInterval);
+
+    submitExam(true);
+
+  }
+
+}
+
+
+async function submitExam(automatic = false) {
+
+  if (submitted || submitting) {
+    return;
+  }
+
+  if (!automatic &&
+      !confirm("هل أنت متأكد من تسليم الامتحان؟")) {
+    return;
+  }
+
+  submitting = true;
+  submitBtn.disabled = true;
+
+  message.textContent = "جارٍ تسليم الامتحان...";
+
+  try {
+
+    // انتظار انتهاء أي عملية حفظ سابقة
+    while (saving) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    await updateDoc(attemptRef, {
+      answers: answers,
+      status: "submitted",
+      submittedAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    submitted = true;
+
+    if (timerInterval) {
+      clearInterval(timerInterval);
+    }
+
+    showSubmitted(automatic);
+
+  } catch (error) {
+
+    console.error(error);
+
+    submitting = false;
+    submitBtn.disabled = false;
+
+    message.textContent =
+      "لم يتم التسليم. حاول مرة أخرى.";
+
+  }
+
+}
+
+
+function showSubmitted(automatic = false) {
+
+  submitted = true;
+
+  if (timerInterval) {
+    clearInterval(timerInterval);
+  }
+
+  timerBox.textContent = "انتهى";
+
+  questionsBox.innerHTML = "";
+
+  submitBtn.style.display = "none";
+
+  message.innerHTML = "";
+
+  const result = document.createElement("div");
+  result.className = "result";
+
+  result.textContent = automatic
+    ? "انتهى الوقت وتم تسليم إجاباتك بنجاح. سيتم إعلان النتيجة بعد التصحيح."
+    : "تم تسليم الامتحان بنجاح. سيتم إعلان النتيجة بعد التصحيح.";
+
+  message.appendChild(result);
+
+}
+
+
+submitBtn.addEventListener("click", () => {
+  submitExam(false);
+});
+
+</script>
+
+</body>
+  </html>
