@@ -1,0 +1,303 @@
+/* =================================
+   TafaWok - Liquid Glass Design
+================================= */
+
+* {
+    box-sizing: border-box;
+    font-family: Tahoma, Arial, sans-serif;
+}
+
+:root {
+    --primary: #2878df;
+    --primary-dark: #1455a0;
+    --text: #183153;
+    --muted: #71839c;
+    --glass: rgba(255, 255, 255, 0.62);
+    --border: rgba(255, 255, 255, 0.8);
+    --shadow: 0 12px 40px rgba(30, 75, 130, 0.12);
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text);
+    background:
+        radial-gradient(circle at 10% 10%, #c5e2ff, transparent 35%),
+        radial-gradient(circle at 90% 80%, #d9d4ff, transparent 35%),
+        linear-gradient(135deg, #edf6ff, #f7f8ff);
+    background-attachment: fixed;
+}
+
+/* Header */
+
+header {
+    padding: 25px 15px;
+    text-align: center;
+    background: rgba(255,255,255,.35);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+    color: var(--primary-dark);
+    margin: 5px;
+    font-size: 30px;
+}
+
+/* Main container */
+
+.container {
+    width: 92%;
+    max-width: 850px;
+    margin: 25px auto;
+    padding: 25px;
+    background: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: 25px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    animation: appear .4s ease;
+}
+
+/* Cards */
+
+.card {
+    padding: 18px;
+    margin: 15px 0;
+    border-radius: 20px;
+    background: rgba(255,255,255,.55);
+    border: 1px solid rgba(255,255,255,.9);
+    box-shadow: 0 5px 20px rgba(30,75,130,.07);
+    transition: .25s;
+    overflow-wrap: anywhere;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(30,75,130,.13);
+}
+
+.card h3 {
+    color: var(--primary-dark);
+}
+
+/* Inputs */
+
+input, textarea, select {
+    width: 100%;
+    padding: 14px;
+    margin: 9px 0;
+    color: var(--text);
+    background: rgba(255,255,255,.7);
+    border: 1px solid rgba(150,180,220,.35);
+    border-radius: 14px;
+    font-size: 16px;
+    outline: none;
+    transition: .2s;
+}
+
+input:focus, textarea:focus, select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(40,120,223,.12);
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Buttons */
+
+button {
+    width: 100%;
+    padding: 14px;
+    margin-top: 10px;
+    border: 1px solid rgba(255,255,255,.5);
+    border-radius: 15px;
+    background: linear-gradient(135deg, #398cf0, #1455a0);
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(20,85,160,.18);
+    transition: .25s;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.08);
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.secondary {
+    background: rgba(255,255,255,.7);
+    color: var(--primary-dark);
+    box-shadow: none;
+    border: 1px solid rgba(40,120,223,.2);
+}
+
+.danger {
+    background: linear-gradient(135deg, #e34b4b, #a71919);
+}
+
+/* Navigation */
+
+.navbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    padding: 15px;
+    margin: 15px auto;
+    width: 92%;
+    max-width: 1000px;
+    background: rgba(255,255,255,.5);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.navbar a {
+    padding: 11px 17px;
+    color: var(--primary-dark);
+    text-decoration: none;
+    border-radius: 12px;
+    transition: .2s;
+}
+
+.navbar a:hover,
+.navbar a.active {
+    background: rgba(40,120,223,.13);
+}
+
+/* Sections */
+
+.section-title {
+    padding-bottom: 12px;
+    margin-top: 30px;
+    border-bottom: 2px solid rgba(40,120,223,.15);
+}
+
+.message {
+    text-align: center;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+}
+
+.small {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.option {
+    display: block;
+    padding: 13px;
+    margin: 8px 0;
+    background: rgba(255,255,255,.7);
+    border: 1px solid rgba(150,180,220,.3);
+    border-radius: 13px;
+}
+
+.option input {
+    width: auto;
+    margin-left: 8px;
+}
+
+.timer {
+    padding: 18px;
+    margin: 15px 0;
+    text-align: center;
+    color: #b42318;
+    background: rgba(255,230,230,.7);
+    border: 1px solid rgba(255,255,255,.8);
+    border-radius: 18px;
+    font-size: 26px;
+    font-weight: bold;
+}
+
+/* Utilities */
+
+.hidden {
+    display: none !important;
+}
+
+a {
+    color: var(--primary-dark);
+}
+
+footer {
+    padding: 25px;
+    text-align: center;
+    color: var(--muted);
+}
+
+/* Animation */
+
+@keyframes appear {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile */
+
+@media(max-width:600px) {
+    header h1 {
+        font-size: 24px;
+    }
+
+    .container {
+        padding: 18px;
+        border-radius: 20px;
+    }
+
+    .navbar {
+        gap: 5px;
+    }
+
+    .navbar a {
+        padding: 10px;
+        font-size: 14px;
+    }
+}
+
+/* Dark mode */
+
+body.dark {
+    --text: #edf4ff;
+    --muted: #b1c2d8;
+    --glass: rgba(20,35,60,.72);
+    --border: rgba(255,255,255,.12);
+
+    background:
+        radial-gradient(circle at 10% 10%, #203e65, transparent 40%),
+        linear-gradient(135deg, #101827, #18243a);
+}
+
+body.dark .card,
+body.dark input,
+body.dark textarea,
+body.dark select,
+body.dark .option,
+body.dark .navbar {
+    background: rgba(255,255,255,.08);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+body.dark .card h3,
+body.dark .navbar a {
+    color: #9bcaff;
+  }
