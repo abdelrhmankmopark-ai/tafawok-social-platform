@@ -26,6 +26,7 @@ footer{text-align:center;padding:20px;color:#65758b}
 .small{font-size:13px;color:#65758b}
 .option{display:block;padding:10px;margin:7px 0;background:#fff;border:1px solid #dce4ef;border-radius:8px}
 .option input{width:auto;margin-left:8px}
+.timer{background:#fff0f0;color:#b42318;padding:14px;text-align:center;border-radius:10px;font-size:22px;font-weight:bold;margin:12px 0}
 </style>
 </head>
 
@@ -91,6 +92,7 @@ footer{text-align:center;padding:20px;color:#65758b}
 
 <div id="examArea" class="hidden">
 <h3 id="activeExamTitle"></h3>
+<div id="examTimer" class="timer">30:00</div>
 <p id="examProgress" class="small"></p>
 <div id="examQuestions"></div>
 <button id="submitExamBtn">تسليم الامتحان</button>
@@ -124,6 +126,7 @@ footer{text-align:center;padding:20px;color:#65758b}
 <h3 class="section-title">📝 إنشاء امتحان</h3>
 <input id="examTitleInput" placeholder="عنوان الامتحان">
 <textarea id="examDescriptionInput" placeholder="وصف الامتحان"></textarea>
+<input id="examDurationInput" type="number" min="1" max="180" value="30" placeholder="مدة الامتحان بالدقائق">
 
 <hr>
 <h4>إضافة سؤال</h4>
@@ -204,6 +207,10 @@ let activeAttemptId = null;
 let activeExamQuestions = [];
 let activeAnswers = {};
 let answerSaveQueue = Promise.resolve();
+
+let examTimerInterval = null;
+let examDeadline = null;
+let examSubmitting = false;
 
 window.showPage = function(page){
 document.querySelectorAll(".container").forEach(x=>x.classList.add("hidden"));
@@ -639,16 +646,20 @@ document.getElementById("questionCount").textContent=
 "عدد الأسئلة: "+draftQuestions.length;
 }
 
-// نشر امتحان
+// نشر امتحان مع مدة محددة
 document.getElementById("publishExamBtn").onclick=async()=>{
 if(!isTeacher(auth.currentUser))
 return message("examTeacherMessage","غير مصرح لك.");
 
 const title=document.getElementById("examTitleInput").value.trim();
 const description=document.getElementById("examDescriptionInput").value.trim();
+const duration=Number(document.getElementById("examDurationInput").value);
 
 if(!title)
 return message("examTeacherMessage","اكتب عنوان الامتحان.");
+
+if(!Number.isInteger(duration)||duration<1||duration>180)
+return message("examTeacherMessage","مدة الامتحان يجب أن تكون من دقيقة إلى 180 دقيقة.");
 
 if(draftQuestions.length===0)
 return message("examTeacherMessage","أضف سؤالاً واحداً على الأقل.");
@@ -668,6 +679,7 @@ btn.disabled=true;
 try{
 const examRef=await addDoc(collection(db,"exams"),{
 title,description,
+durationMinutes:duration,
 questions:publicQuestions,
 isPublished:false,
 createdAt:serverTimestamp()
@@ -685,6 +697,7 @@ renderDraftQuestions();
 
 document.getElementById("examTitleInput").value="";
 document.getElementById("examDescriptionInput").value="";
+document.getElementById("examDurationInput").value="30";
 
 message("examTeacherMessage","تم نشر الامتحان بنجاح.",true);
 document.getElementById("loadTeacherExamsBtn").click();
@@ -716,7 +729,8 @@ return;
 result.forEach(item=>{
 const d=item.data();
 makeCard(box,d.title,
-(d.description||"")+" — عدد الأسئلة: "+(d.questions||[]).length);
+(d.description||"")+" — عدد الأسئلة: "+(d.questions||[]).length+
+" — المدة: "+(d.durationMinutes||30)+" دقيقة");
 });
 
 }catch(error){
@@ -744,7 +758,9 @@ return;
 
 for(const item of exams.docs){
 const exam=item.data();
-const card=makeCard(box,exam.title,exam.description||"");
+const duration=Number(exam.durationMinutes)||30;
+const card=makeCard(box,exam.title,
+(exam.description||"")+" — المدة: "+duration+" دقيقة");
 
 const attemptId=user.uid+"_"+item.id;
 const attemptRef=doc(db,"examAttempts",attemptId);
@@ -783,17 +799,69 @@ box.textContent="تعذر تحميل الامتحانات. تحقق من قوا�
 }
 }
 
+// إيقاف المؤقت
+function stopExamTimer(){
+if(examTimerInterval){
+clearInterval(examTimerInterval);
+examTimerInterval=null;
+}
+}
+
+// عرض الوقت المتبقي
+function updateTimerDisplay(){
+if(!examDeadline)return;
+
+const remaining=Math.max(0,Math.ceil((examDeadline-Date.now())/1000));
+const minutes=Math.floor(remaining/60);
+const seconds=remaining%60;
+
+document.getElementById("examTimer").textContent=
+String(minutes).padStart(2,"0")+":"+
+String(seconds).padStart(2,"0");
+
+if(remaining<=0){
+stopExamTimer();
+autoSubmitExam();
+}
+}
+
+// تشغيل المؤقت
+function startExamTimer(startedAt,durationMinutes){
+stopExamTimer();
+
+let startMilliseconds;
+
+if(startedAt && typeof startedAt.toMillis==="function"){
+startMilliseconds=startedAt.toMillis();
+}else if(startedAt instanceof Date){
+startMilliseconds=startedAt.getTime();
+}else{
+throw new Error("وقت بداية الامتحان غير متاح.");
+}
+
+examDeadline=startMilliseconds+durationMinutes*60*1000;
+
+updateTimerDisplay();
+
+if(Date.now()>=examDeadline)return;
+
+examTimerInterval=setInterval(updateTimerDisplay,1000);
+}
+
 // بدء أو استكمال الامتحان
 async function startExam(examId,exam,user){
 activeExamId=examId;
 activeAttemptId=user.uid+"_"+examId;
 activeExamQuestions=exam.questions||[];
 activeAnswers={};
+examSubmitting=false;
 
 const attemptRef=doc(db,"examAttempts",activeAttemptId);
+const duration=Number(exam.durationMinutes)||30;
 
 try{
 const existing=await getDoc(attemptRef);
+let startedAt;
 
 if(existing.exists()){
 const data=existing.data();
@@ -804,6 +872,7 @@ return;
 }
 
 activeAnswers=data.answers||{};
+startedAt=data.startedAt;
 
 }else{
 await setDoc(attemptRef,{
@@ -814,14 +883,24 @@ status:"inProgress",
 startedAt:serverTimestamp(),
 updatedAt:serverTimestamp()
 });
+
+const created=await getDoc(attemptRef);
+
+if(!created.exists()){
+throw new Error("تعذر قراءة محاولة الامتحان بعد إنشائها.");
+}
+
+startedAt=created.data().startedAt;
 }
 
 document.getElementById("examArea").classList.remove("hidden");
 document.getElementById("activeExamTitle").textContent=exam.title;
 
-message("examMessage","تم حفظ إجاباتك تلقائياً أثناء الحل.",true);
+message("examMessage","يتم حفظ إجاباتك تلقائياً أثناء الحل.",true);
 
 renderStudentQuestions();
+
+startExamTimer(startedAt,duration);
 
 document.getElementById("examArea").scrollIntoView({behavior:"smooth"});
 
@@ -859,7 +938,7 @@ card.appendChild(label);
 
 // حفظ إجابة الطالب
 async function saveStudentAnswer(questionId,answer){
-if(!activeAttemptId)return;
+if(!activeAttemptId||examSubmitting)return;
 
 activeAnswers[questionId]=answer;
 
@@ -883,11 +962,11 @@ message("examMessage","تعذر حفظ الإجابة. تحقق من الاتص�
 }
 
 // تسليم الامتحان
-document.getElementById("submitExamBtn").onclick=async()=>{
-if(!activeAttemptId)return;
+async function submitActiveExam(isAutomatic=false){
+if(!activeAttemptId||examSubmitting)return;
 
-if(!confirm("هل أنت متأكد من تسليم الامتحان؟ لن تتمكن من تعديل إجاباتك بعد التسليم."))
-return;
+examSubmitting=true;
+stopExamTimer();
 
 const btn=document.getElementById("submitExamBtn");
 btn.disabled=true;
@@ -903,20 +982,59 @@ updatedAt:serverTimestamp()
 });
 
 document.getElementById("examArea").classList.add("hidden");
-message("examMessage","تم تسليم الامتحان بنجاح.",true);
+
+message(
+"examMessage",
+isAutomatic?
+"انتهى الوقت وتم تسليم الامتحان تلقائياً.":
+"تم تسليم الامتحان بنجاح.",
+true
+);
+
+activeAttemptId=null;
+examDeadline=null;
 
 const user=auth.currentUser;
 if(user)await loadStudentExams(user);
 
 }catch(error){
 console.error(error);
-message("examMessage","تعذر تسليم الامتحان: "+error.message);
-}finally{
+examSubmitting=false;
 btn.disabled=false;
+
+message(
+"examMessage",
+"تعذر تسليم الامتحان. تحقق من الاتصال ثم حاول التسليم مرة أخرى."
+);
+
+if(examDeadline && Date.now()<examDeadline){
+startExamTimer(
+new Date(examDeadline-(Number(activeExamQuestions.length)||30)*60*1000),
+Number(document.getElementById("examDurationInput").value)||30
+);
 }
+}
+}
+
+// التسليم التلقائي
+async function autoSubmitExam(){
+if(!activeAttemptId||examSubmitting)return;
+
+message("examMessage","انتهى وقت الامتحان. جاري التسليم...",false);
+await submitActiveExam(true);
+}
+
+// زر التسليم اليدوي
+document.getElementById("submitExamBtn").onclick=async()=>{
+if(!activeAttemptId||examSubmitting)return;
+
+if(!confirm("هل أنت متأكد من تسليم الامتحان؟ لن تتمكن من تعديل إجاباتك بعد التسليم."))
+return;
+
+await submitActiveExam(false);
 };
 
-// عرض محاولات الطلاب للأستاذ مع إظهار أسماء الطلاب
+// عرض محاولات الطلاب للأستاذ
 document.getElementById("loadAttemptsBtn").onclick=async()=>{
 if(!isTeacher(auth.currentUser))return;
 
@@ -943,17 +1061,13 @@ let studentName="طالب غير معروف";
 let examTitle="امتحان غير معروف";
 
 try{
-const studentDoc=await getDoc(
-doc(db,"students",a.studentId)
-);
+const studentDoc=await getDoc(doc(db,"students",a.studentId));
 
 if(studentDoc.exists()){
 studentName=studentDoc.data().name||studentName;
 }
 
-const examDoc=await getDoc(
-doc(db,"exams",a.examId)
-);
+const examDoc=await getDoc(doc(db,"exams",a.examId));
 
 if(examDoc.exists()){
 examTitle=examDoc.data().title||examTitle;
@@ -976,8 +1090,7 @@ card.appendChild(reviewBtn);
 
 if(a.reviewed===true){
 const result=document.createElement("p");
-result.textContent=
-"الدرجة المعتمدة: "+a.score+" من "+a.total;
+result.textContent="الدرجة المعتمدة: "+a.score+" من "+a.total;
 card.appendChild(result);
 }
 }
@@ -1071,6 +1184,8 @@ alert("تعذر مراجعة المحاولة: "+error.message);
 
 // متابعة حالة الدخول
 onAuthStateChanged(auth,async user=>{
+stopExamTimer();
+
 if(!user){
 showPage("welcome");
 return;
@@ -1090,7 +1205,11 @@ if(auth.currentUser&&!isTeacher(auth.currentUser))
 loadStudent(auth.currentUser);
 };
 
-document.getElementById("logoutStudentBtn").onclick=()=>signOut(auth);
+document.getElementById("logoutStudentBtn").onclick=async()=>{
+stopExamTimer();
+await signOut(auth);
+};
+
 document.getElementById("logoutTeacherBtn").onclick=()=>signOut(auth);
 
 </script>
