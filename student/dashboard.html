@@ -246,10 +246,10 @@ signOut
 import {
 doc,
 getDoc,
-getDocs,
 collection,
 query,
-where
+where,
+onSnapshot
 } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
 const loading=document.getElementById("loading");
@@ -262,6 +262,12 @@ const unreadCount=document.getElementById("unreadCount");
 
 let currentUser=null;
 
+let lessonsSnap=null;
+let announcementsSnap=null;
+let examsSnap=null;
+
+let unsubscribeListeners=[];
+
 function setCount(id,value){
 document.getElementById(id).textContent=value;
 }
@@ -270,7 +276,9 @@ function getReadItems(){
 
 try{
 return JSON.parse(
-localStorage.getItem("tafawok_read_notifications_"+currentUser.uid)||"[]"
+localStorage.getItem(
+"tafawok_read_notifications_"+currentUser.uid
+)||"[]"
 );
 }catch{
 return [];
@@ -278,27 +286,13 @@ return [];
 
 }
 
-async function loadNotifications(){
+function updateDashboard(){
 
 if(!currentUser)return;
 
-refreshBtn.disabled=true;
-refreshBtn.textContent="جاري التحديث...";
-
-try{
-
-const [lessonsSnap,announcementsSnap,examsSnap]=await Promise.all([
-
-getDocs(collection(db,"lessons")),
-
-getDocs(collection(db,"announcements")),
-
-getDocs(query(
-collection(db,"exams"),
-where("isPublished","==",true)
-))
-
-]);
+if(!lessonsSnap || !announcementsSnap || !examsSnap){
+return;
+}
 
 const lessons=lessonsSnap.size;
 const announcements=announcementsSnap.size;
@@ -313,8 +307,8 @@ setCount("examsBadge",exams+" امتحان");
 setCount("announcementsBadge",announcements+" إعلان");
 
 // حساب الإشعارات غير المقروءة
-const readItems=getReadItems();
 
+const readItems=getReadItems();
 const allIds=[];
 
 announcementsSnap.forEach(item=>{
@@ -329,38 +323,143 @@ examsSnap.forEach(item=>{
 allIds.push("exam_"+item.id);
 });
 
-const unread=allIds.filter(id=>!readItems.includes(id)).length;
+const unread=allIds.filter(
+id=>!readItems.includes(id)
+).length;
 
 if(unread>0){
+
 unreadCount.textContent=unread>99?"99+":unread;
 unreadCount.style.display="inline-block";
+
 }else{
+
 unreadCount.style.display="none";
+
 }
 
 loadError.style.display="none";
 
-}catch(error){
+}
 
-console.error("Notification error:",error);
+// إيقاف المستمعين السابقين
+
+function stopLiveUpdates(){
+
+unsubscribeListeners.forEach(unsubscribe=>{
+unsubscribe();
+});
+
+unsubscribeListeners=[];
+
+}
+
+// تشغيل التحديث المباشر
+
+function startLiveUpdates(){
+
+if(!currentUser)return;
+
+stopLiveUpdates();
+
+refreshBtn.disabled=true;
+refreshBtn.textContent="جاري تحميل التنبيهات...";
+
+// متابعة الدروس مباشرة
+
+const stopLessons=onSnapshot(
+collection(db,"lessons"),
+
+(snapshot)=>{
+
+lessonsSnap=snapshot;
+updateDashboard();
+
+},
+
+(error)=>{
+
+console.error("Lessons listener:",error);
+showLiveError(error);
+
+}
+
+);
+
+// متابعة الإعلانات مباشرة
+
+const stopAnnouncements=onSnapshot(
+collection(db,"announcements"),
+
+(snapshot)=>{
+
+announcementsSnap=snapshot;
+updateDashboard();
+
+},
+
+(error)=>{
+
+console.error("Announcements listener:",error);
+showLiveError(error);
+
+}
+
+);
+
+// متابعة الامتحانات المنشورة مباشرة
+
+const stopExams=onSnapshot(
+query(
+collection(db,"exams"),
+where("isPublished","==",true)
+),
+
+(snapshot)=>{
+
+examsSnap=snapshot;
+updateDashboard();
+
+},
+
+(error)=>{
+
+console.error("Exams listener:",error);
+showLiveError(error);
+
+}
+
+);
+
+unsubscribeListeners=[
+stopLessons,
+stopAnnouncements,
+stopExams
+];
+
+}
+
+function showLiveError(error){
+
+console.error(error);
 
 loadError.style.display="block";
-loadError.textContent="تعذر تحديث التنبيهات. تحقق من الإنترنت وحاول مرة أخرى.";
-
-}finally{
+loadError.textContent=
+"تعذر تحديث التنبيهات مباشرة. تحقق من اتصال الإنترنت.";
 
 refreshBtn.disabled=false;
 refreshBtn.textContent="🔄 تحديث التنبيهات";
 
 }
 
-}
-
 onAuthStateChanged(auth,async(user)=>{
 
 if(!user){
+
+stopLiveUpdates();
 location.replace("../login.html");
 return;
+
 }
 
 currentUser=user;
@@ -371,18 +470,24 @@ const studentRef=doc(db,"students",user.uid);
 const studentSnap=await getDoc(studentRef);
 
 if(!studentSnap.exists()){
+
 await signOut(auth);
 location.replace("../login.html");
 return;
+
 }
 
 const studentData=studentSnap.data();
 
 if(studentData.status==="disabled"){
+
 await signOut(auth);
+
 alert("حسابك موقوف حالياً. تواصل مع الأستاذ.");
+
 location.replace("../login.html");
 return;
+
 }
 
 studentName.textContent=
@@ -391,7 +496,9 @@ studentData.name||user.displayName||"الطالب";
 loading.hidden=true;
 dashboard.hidden=false;
 
-await loadNotifications();
+// بدء التحديث المباشر
+
+startLiveUpdates();
 
 }catch(error){
 
@@ -404,11 +511,33 @@ loading.textContent=
 
 });
 
-refreshBtn.addEventListener("click",loadNotifications);
+// زر التحديث اليدوي يعيد حساب الأعداد من البيانات الحالية
+
+refreshBtn.addEventListener("click",()=>{
+
+if(!currentUser)return;
+
+refreshBtn.disabled=true;
+refreshBtn.textContent="جاري التحديث...";
+
+updateDashboard();
+
+setTimeout(()=>{
+
+refreshBtn.disabled=false;
+refreshBtn.textContent="🔄 تحديث التنبيهات";
+
+},500);
+
+});
+
+// تسجيل الخروج
 
 logoutBtn.addEventListener("click",async()=>{
 
 try{
+
+stopLiveUpdates();
 
 await signOut(auth);
 location.replace("../login.html");
@@ -420,6 +549,10 @@ alert("تعذر تسجيل الخروج. حاول مرة أخرى.");
 }
 
 });
+
+// تنظيف المستمعين عند مغادرة الصفحة
+
+window.addEventListener("pagehide",stopLiveUpdates);
 
 </script></body>
 </html>
