@@ -1,0 +1,92 @@
+<!DOCTYPE html><html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>استعادة كلمة المرور | منصة التفوق</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.forgot-box {
+    max-width: 440px;
+    margin: 60px auto;
+    text-align: center;
+}
+.logo {font-size:60px}
+.forgot-box h2 {color:#1455a0}
+.back-link {
+    display:block;
+    margin-top:20px;
+    text-decoration:none;
+}
+</style>
+</head>
+<body><header>
+<h1>🏆 منصة التفوق</h1>
+<p>في الدراسات الاجتماعية</p>
+</header><main class="container forgot-box"><div class="logo">🔑</div><h2>استعادة كلمة المرور</h2><p>اكتب بريدك الإلكتروني وسنرسل لك رابط إعادة تعيين كلمة المرور.</p><form id="forgotForm"><input
+id="email"
+type="email"
+placeholder="البريد الإلكتروني"
+required
+
+«»
+
+<button id="sendBtn" type="submit">
+إرسال رابط الاستعادة
+</button></form><p id="message" class="message"></p><a class="back-link" href="login.html">العودة لتسجيل الدخول</a>
+<a class="back-link" href="index.html">العودة للرئيسية</a>
+
+</main><footer>
+جميع الحقوق محفوظة © منصة التفوق
+</footer><script type="module">
+import { auth } from "./firebase-config.js";
+
+import {
+sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+const form = document.getElementById("forgotForm");
+const btn = document.getElementById("sendBtn");
+const output = document.getElementById("message");
+
+function showMessage(text,success=false){
+output.textContent=text;
+output.style.color=success?"green":"#b42318";
+}
+
+form.addEventListener("submit",async(event)=>{
+event.preventDefault();
+
+const email=document.getElementById("email").value.trim();
+
+if(!email){
+showMessage("اكتب البريد الإلكتروني.");
+return;
+}
+
+btn.disabled=true;
+btn.textContent="جاري الإرسال...";
+
+try{
+
+await sendPasswordResetEmail(auth,email);
+
+showMessage(
+"إذا كان البريد مسجلاً، ستصلك رسالة تحتوي على رابط الاستعادة.",
+true
+);
+
+}catch(error){
+
+console.error(error);
+
+showMessage("تعذر إرسال الرسالة. تحقق من البريد والاتصال.");
+
+}finally{
+
+btn.disabled=false;
+btn.textContent="إرسال رابط الاستعادة";
+
+}
+});
+</script></body>
+</html>
