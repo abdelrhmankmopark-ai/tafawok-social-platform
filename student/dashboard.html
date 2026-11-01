@@ -1,0 +1,183 @@
+<!DOCTYPE html><html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة الطالب | منصة التفوق</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    body {
+      min-height: 100vh;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }.dashboard {
+  max-width: 1000px;
+  margin: 30px auto;
+}
+
+.welcome {
+  padding: 25px;
+  margin-bottom: 25px;
+  border-radius: 22px;
+  background: rgba(255,255,255,.18);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255,255,255,.3);
+}
+
+.sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(140px,1fr));
+  gap: 15px;
+}
+
+.section-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 145px;
+  padding: 20px 10px;
+  border-radius: 20px;
+  background: rgba(255,255,255,.2);
+  border: 1px solid rgba(255,255,255,.35);
+  backdrop-filter: blur(15px);
+  text-decoration: none;
+  color: inherit;
+  transition: .2s;
+}
+
+.section-card:active {
+  transform: scale(.96);
+}
+
+.icon {
+  font-size: 38px;
+  margin-bottom: 12px;
+}
+
+.section-card h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.logout {
+  margin-top: 25px;
+  padding: 12px 25px;
+  border: 0;
+  border-radius: 12px;
+  background: #d94343;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#loading {
+  text-align: center;
+  margin-top: 80px;
+}
+
+  </style>
+</head><body>  <div id="loading">جاري تحميل لوحة الطالب...</div>  <main class="dashboard" id="dashboard" hidden><section class="welcome">
+  <h1>مرحباً بك 👋</h1>
+  <h2 id="studentName">الطالب</h2>
+  <p>أهلاً بك في منصة التفوق للدراسات الاجتماعية</p>
+</section>
+
+<h2>أقسام المنصة</h2>
+
+<section class="sections">
+
+  <a class="section-card" href="lessons.html">
+    <span class="icon">📚</span>
+    <h3>الدروس</h3>
+  </a>
+
+  <a class="section-card" href="exams.html">
+    <span class="icon">📝</span>
+    <h3>الامتحانات</h3>
+  </a>
+
+  <a class="section-card" href="grades.html">
+    <span class="icon">📊</span>
+    <h3>الدرجات</h3>
+  </a>
+
+  <a class="section-card" href="announcements.html">
+    <span class="icon">📢</span>
+    <h3>الإعلانات</h3>
+  </a>
+
+  <a class="section-card" href="profile.html">
+    <span class="icon">👤</span>
+    <h3>الملف الشخصي</h3>
+  </a>
+
+</section>
+
+<button class="logout" id="logoutBtn">تسجيل الخروج</button>
+
+  </main>  <script type="module">
+    import { auth, db } from "../firebase-config.js";
+
+    import {
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+    import {
+      doc,
+      getDoc
+    } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
+    const loading = document.getElementById("loading");
+    const dashboard = document.getElementById("dashboard");
+    const studentName = document.getElementById("studentName");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        location.replace("../login.html");
+        return;
+      }
+
+      try {
+        const studentRef = doc(db, "students", user.uid);
+        const studentSnap = await getDoc(studentRef);
+
+        if (!studentSnap.exists()) {
+          await signOut(auth);
+          location.replace("../login.html");
+          return;
+        }
+
+        const studentData = studentSnap.data();
+
+        if (studentData.status === "disabled") {
+          await signOut(auth);
+          alert("حسابك موقوف حالياً. تواصل مع الأستاذ.");
+          location.replace("../login.html");
+          return;
+        }
+
+        studentName.textContent =
+          studentData.name || user.displayName || "الطالب";
+
+        loading.hidden = true;
+        dashboard.hidden = false;
+
+      } catch (error) {
+        console.error(error);
+        loading.textContent =
+          "حدث خطأ أثناء تحميل البيانات. تأكد من اتصال الإنترنت.";
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        location.replace("../login.html");
+      } catch (error) {
+        alert("تعذر تسجيل الخروج. حاول مرة أخرى.");
+      }
+    });
+  </script></body>
+</html>
