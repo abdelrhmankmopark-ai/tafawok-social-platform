@@ -17,6 +17,42 @@ body{
  margin:30px auto;
 }
 
+.top-bar{
+ display:flex;
+ justify-content:flex-end;
+ margin-bottom:15px;
+}
+
+.bell-button{
+ position:relative;
+ display:inline-flex;
+ align-items:center;
+ gap:9px;
+ padding:12px 18px;
+ border-radius:14px;
+ background:#155eef;
+ color:white;
+ text-decoration:none;
+ font-size:16px;
+ font-weight:bold;
+ box-shadow:0 5px 15px #155eef40;
+}
+
+.bell-icon{font-size:23px}
+
+.unread-count{
+ display:none;
+ min-width:22px;
+ height:22px;
+ padding:2px 6px;
+ border-radius:20px;
+ background:#e63946;
+ color:white;
+ text-align:center;
+ font-size:12px;
+ line-height:18px;
+}
+
 .welcome{
  padding:28px;
  margin-bottom:22px;
@@ -27,7 +63,6 @@ body{
 }
 
 .welcome h1{margin-top:0}
-
 .welcome p{line-height:1.8}
 
 .badge{
@@ -67,9 +102,7 @@ body{
  margin-bottom:7px;
 }
 
-.notification-item span{
- font-size:14px;
-}
+.notification-item span{font-size:14px}
 
 .sections{
  display:grid;
@@ -156,7 +189,14 @@ body{
  .welcome{padding:22px}
  .sections{grid-template-columns:repeat(2,1fr)}
 }
-</style></head><body><div id="loading">جاري تحميل لوحة الطالب...</div><div id="loadError"></div><main class="dashboard" id="dashboard" hidden><section class="welcome">
+</style></head><body><div id="loading">جاري تحميل لوحة الطالب...</div>
+<div id="loadError"></div><main class="dashboard" id="dashboard" hidden><div class="top-bar">
+<a class="bell-button" href="notifications.html">
+<span class="bell-icon">🔔</span>
+<span>الإشعارات</span>
+<span class="unread-count" id="unreadCount">0</span>
+</a>
+</div><section class="welcome">
 <h1>مرحباً بك 👋</h1>
 <h2 id="studentName">الطالب</h2>
 <p>أهلاً بك في منصة التفوق للدراسات الاجتماعية.</p>
@@ -218,11 +258,24 @@ const studentName=document.getElementById("studentName");
 const logoutBtn=document.getElementById("logoutBtn");
 const refreshBtn=document.getElementById("refreshBtn");
 const loadError=document.getElementById("loadError");
+const unreadCount=document.getElementById("unreadCount");
 
 let currentUser=null;
 
 function setCount(id,value){
 document.getElementById(id).textContent=value;
+}
+
+function getReadItems(){
+
+try{
+return JSON.parse(
+localStorage.getItem("tafawok_read_notifications_"+currentUser.uid)||"[]"
+);
+}catch{
+return [];
+}
+
 }
 
 async function loadNotifications(){
@@ -258,6 +311,32 @@ setCount("announcementsCount",announcements);
 setCount("lessonsBadge",lessons+" درس");
 setCount("examsBadge",exams+" امتحان");
 setCount("announcementsBadge",announcements+" إعلان");
+
+// حساب الإشعارات غير المقروءة
+const readItems=getReadItems();
+
+const allIds=[];
+
+announcementsSnap.forEach(item=>{
+allIds.push("announcement_"+item.id);
+});
+
+lessonsSnap.forEach(item=>{
+allIds.push("lesson_"+item.id);
+});
+
+examsSnap.forEach(item=>{
+allIds.push("exam_"+item.id);
+});
+
+const unread=allIds.filter(id=>!readItems.includes(id)).length;
+
+if(unread>0){
+unreadCount.textContent=unread>99?"99+":unread;
+unreadCount.style.display="inline-block";
+}else{
+unreadCount.style.display="none";
+}
 
 loadError.style.display="none";
 
