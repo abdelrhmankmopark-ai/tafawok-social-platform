@@ -1,0 +1,481 @@
+<!DOCTYPE html><html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إدارة الإعلانات | منصة التفوق</title><style>
+*{box-sizing:border-box}
+
+body{
+ margin:0;
+ padding:18px;
+ font-family:Arial,sans-serif;
+ background:#0b1220;
+ color:white;
+}
+
+.container{max-width:950px;margin:auto}
+
+.header{
+ background:linear-gradient(135deg,#155eef,#7138e8);
+ padding:25px;
+ border-radius:20px;
+ margin-bottom:20px;
+}
+
+.header h1{margin:0 0 10px}
+.header p{margin:0;opacity:.85}
+
+.card{
+ background:#172235;
+ border:1px solid #293950;
+ border-radius:18px;
+ padding:20px;
+ margin-bottom:20px;
+}
+
+input,textarea{
+ width:100%;
+ padding:13px;
+ margin:8px 0 15px;
+ border-radius:10px;
+ border:1px solid #394b65;
+ background:#0b1220;
+ color:white;
+ font-size:15px;
+}
+
+textarea{
+ min-height:120px;
+ resize:vertical;
+}
+
+label{
+ display:block;
+ color:#cbd5e1;
+}
+
+button{
+ border:0;
+ padding:12px 18px;
+ border-radius:10px;
+ cursor:pointer;
+ font-size:15px;
+ color:white;
+ margin:4px;
+}
+
+.save{background:#155eef}
+.cancel{background:#64748b}
+.edit{background:#d97706}
+.delete{background:#dc3545}
+
+.announcement{
+ background:#0b1220;
+ border:1px solid #334155;
+ border-radius:14px;
+ padding:17px;
+ margin-top:12px;
+}
+
+.announcement h3{margin-top:0}
+
+.announcement p{
+ color:#cbd5e1;
+ line-height:1.8;
+ white-space:pre-wrap;
+}
+
+.date{
+ color:#94a3b8;
+ font-size:13px;
+}
+
+#message{
+ padding:12px;
+ border-radius:10px;
+ margin-bottom:15px;
+ display:none;
+}
+
+.success{background:#14532d}
+.error{background:#7f1d1d}
+
+.empty{
+ text-align:center;
+ color:#94a3b8;
+ padding:25px;
+}
+
+.back{
+ display:inline-block;
+ margin-bottom:15px;
+ color:#93c5fd;
+ text-decoration:none;
+}
+
+#loading{
+ text-align:center;
+ padding:30px;
+}
+</style></head><body><div class="container"><a class="back" href="dashboard.html">⬅ العودة إلى لوحة المدرس</a>
+
+<header class="header">
+<h1>📢 إدارة الإعلانات</h1>
+<p>منصة التفوق للدراسات الاجتماعية</p>
+</header><div id="loading">جاري التحقق من حساب المدرس...</div><div id="app" hidden><div id="message"></div><section class="card"><h2 id="formTitle">➕ إضافة إعلان جديد</h2><form id="announcementForm"><label>عنوان الإعلان</label>
+<input
+type="text"
+id="title"
+placeholder="اكتب عنوان الإعلان"
+required
+
+«»
+
+<label>محتوى الإعلان</label>
+
+<textarea
+ id="content"
+ placeholder="اكتب تفاصيل الإعلان"
+ required
+></textarea><button class="save" type="submit" id="saveBtn">
+نشر الإعلان
+</button><button
+class="cancel"
+type="button"
+id="cancelBtn"
+hidden
+
+«»
+
+إلغاء التعديل
+</button>
+
+</form></section><section class="card"><h2>📋 الإعلانات الحالية</h2><div id="announcementsList">
+<div class="empty">جاري تحميل الإعلانات...</div>
+</div></section></div>
+</div><script type="module">
+
+import {auth,db} from "../firebase-config.js";
+
+import {
+onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+import {
+collection,
+addDoc,
+getDocs,
+query,
+orderBy,
+serverTimestamp,
+doc,
+updateDoc,
+deleteDoc
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
+
+const TEACHER_UID = "BjZsimAIgIUxSJDI8Z3K9huOO012";
+
+const loading = document.getElementById("loading");
+const app = document.getElementById("app");
+const form = document.getElementById("announcementForm");
+const list = document.getElementById("announcementsList");
+
+const titleInput = document.getElementById("title");
+const contentInput = document.getElementById("content");
+
+const saveBtn = document.getElementById("saveBtn");
+const cancelBtn = document.getElementById("cancelBtn");
+const formTitle = document.getElementById("formTitle");
+const message = document.getElementById("message");
+
+let editingId = null;
+let announcementsCache = [];
+
+
+function showMessage(text,type){
+
+message.textContent = text;
+message.className = type;
+message.style.display = "block";
+
+window.scrollTo({top:0,behavior:"smooth"});
+
+setTimeout(()=>{
+message.style.display = "none";
+},4000);
+
+}
+
+
+function resetForm(){
+
+form.reset();
+editingId = null;
+
+formTitle.textContent = "➕ إضافة إعلان جديد";
+saveBtn.textContent = "نشر الإعلان";
+cancelBtn.hidden = true;
+
+}
+
+cancelBtn.addEventListener("click",resetForm);
+
+
+async function loadAnnouncements(){
+
+list.innerHTML =
+'<div class="empty">جاري تحميل الإعلانات...</div>';
+
+try{
+
+let snapshot;
+
+try{
+
+const q = query(
+collection(db,"announcements"),
+orderBy("createdAt","desc")
+);
+
+snapshot = await getDocs(q);
+
+}catch(error){
+
+snapshot = await getDocs(
+collection(db,"announcements")
+);
+
+}
+
+announcementsCache = snapshot.docs.map(d=>({
+id:d.id,
+...d.data()
+}));
+
+renderAnnouncements();
+
+}catch(error){
+
+console.error(error);
+
+list.innerHTML =
+'<div class="empty">تعذر تحميل الإعلانات. راجع اتصال Firebase والقواعد.</div>';
+
+}
+
+}
+
+
+function renderAnnouncements(){
+
+if(announcementsCache.length === 0){
+
+list.innerHTML =
+'<div class="empty">لا توجد إعلانات حتى الآن.</div>';
+
+return;
+
+}
+
+list.innerHTML = "";
+
+announcementsCache.forEach(item=>{
+
+const div = document.createElement("div");
+div.className = "announcement";
+
+const h3 = document.createElement("h3");
+h3.textContent = "📢 " + (item.title || "بدون عنوان");
+
+const p = document.createElement("p");
+p.textContent = item.content || "";
+
+const date = document.createElement("div");
+date.className = "date";
+
+if(item.createdAt?.toDate){
+
+date.textContent =
+"تاريخ النشر: " +
+item.createdAt.toDate().toLocaleString("ar-EG");
+
+}else{
+
+date.textContent = "إعلان";
+
+}
+
+const editBtn = document.createElement("button");
+editBtn.className = "edit";
+editBtn.textContent = "✏️ تعديل";
+
+editBtn.addEventListener("click",()=>{
+editAnnouncement(item.id);
+});
+
+const deleteBtn = document.createElement("button");
+deleteBtn.className = "delete";
+deleteBtn.textContent = "🗑️ حذف";
+
+deleteBtn.addEventListener("click",()=>{
+removeAnnouncement(item.id);
+});
+
+div.append(h3,p,date,editBtn,deleteBtn);
+
+list.appendChild(div);
+
+});
+
+}
+
+
+function editAnnouncement(id){
+
+const item = announcementsCache.find(
+announcement=>announcement.id === id
+);
+
+if(!item)return;
+
+editingId = id;
+
+titleInput.value = item.title || "";
+contentInput.value = item.content || "";
+
+formTitle.textContent = "✏️ تعديل الإعلان";
+saveBtn.textContent = "حفظ التعديلات";
+cancelBtn.hidden = false;
+
+window.scrollTo({top:0,behavior:"smooth"});
+
+}
+
+
+async function removeAnnouncement(id){
+
+const confirmed = confirm(
+"هل أنت متأكد من حذف هذا الإعلان؟"
+);
+
+if(!confirmed)return;
+
+try{
+
+await deleteDoc(
+doc(db,"announcements",id)
+);
+
+showMessage("تم حذف الإعلان بنجاح","success");
+
+await loadAnnouncements();
+
+}catch(error){
+
+console.error(error);
+
+showMessage(
+"تعذر حذف الإعلان: "+error.message,
+"error"
+);
+
+}
+
+}
+
+
+form.addEventListener("submit",async(event)=>{
+
+event.preventDefault();
+
+const title = titleInput.value.trim();
+const content = contentInput.value.trim();
+
+if(!title || !content){
+
+showMessage("اكتب عنوان الإعلان ومحتواه","error");
+return;
+
+}
+
+saveBtn.disabled = true;
+
+try{
+
+if(editingId){
+
+await updateDoc(
+doc(db,"announcements",editingId),
+{
+title,
+content
+}
+);
+
+showMessage("تم تعديل الإعلان بنجاح","success");
+
+}else{
+
+await addDoc(
+collection(db,"announcements"),
+{
+title,
+content,
+createdAt:serverTimestamp()
+}
+);
+
+showMessage("تم نشر الإعلان بنجاح","success");
+
+}
+
+resetForm();
+
+await loadAnnouncements();
+
+}catch(error){
+
+console.error(error);
+
+showMessage(
+"حدث خطأ أثناء الحفظ: "+error.message,
+"error"
+);
+
+}finally{
+
+saveBtn.disabled = false;
+
+}
+
+});
+
+
+onAuthStateChanged(auth,async(user)=>{
+
+if(!user){
+
+location.replace("../login.html");
+return;
+
+}
+
+if(user.uid !== TEACHER_UID){
+
+loading.textContent =
+"ليس لديك صلاحية دخول هذه الصفحة.";
+
+return;
+
+}
+
+loading.hidden = true;
+app.hidden = false;
+
+await loadAnnouncements();
+
+});
+
+</script></body>
+  </html>
