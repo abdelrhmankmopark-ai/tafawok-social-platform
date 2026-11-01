@@ -1,9 +1,22 @@
-<!DOCTYPE html><html lang="ar" dir="rtl">
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>منصة التفوق في الدراسات الاجتماعية</title>
+
 <link rel="stylesheet" href="css/style.css">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1455a0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="منصة التفوق">
+<link rel="icon" href="images/icon.svg">
+<link rel="apple-touch-icon" href="images/icon.svg">
+
 <style>
 .hero {
     max-width: 950px;
@@ -11,75 +24,165 @@
     padding: 35px 20px;
     text-align: center;
 }
-.hero h1 {font-size: 34px;color:#1455a0}
-.hero p {line-height:2;color:var(--muted)}
-.hero-icon {font-size:65px;margin:15px}
+
+.hero h1 {
+    font-size: 34px;
+    color: #1455a0;
+}
+
+.hero p {
+    line-height: 2;
+    color: var(--muted);
+}
+
+.hero-icon {
+    font-size: 65px;
+    margin: 15px;
+}
+
 .features {
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-    gap:15px;
-    max-width:950px;
-    width:92%;
-    margin:25px auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+    gap: 15px;
+    max-width: 950px;
+    width: 92%;
+    margin: 25px auto;
 }
+
 .feature {
-    padding:22px;
-    text-align:center;
-    background:var(--glass);
-    border:1px solid var(--border);
-    border-radius:22px;
-    backdrop-filter:blur(20px);
+    padding: 22px;
+    text-align: center;
+    background: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    backdrop-filter: blur(20px);
 }
-.feature span {font-size:35px}
+
+.feature span {
+    font-size: 35px;
+}
+
 .theme-btn {
-    position:absolute;
-    left:15px;
-    top:15px;
-    width:auto;
-    padding:10px 15px;
+    position: absolute;
+    left: 15px;
+    top: 15px;
+    width: auto;
+    padding: 10px 15px;
 }
-@media(max-width:600px){
-    .hero h1{font-size:27px}
+
+.install-btn {
+    display: none;
+    margin: 15px auto;
+    padding: 14px 25px;
+    border: none;
+    border-radius: 14px;
+    background: #1455a0;
+    color: white;
+    font-size: 17px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.install-btn.show {
+    display: block;
+}
+
+.install-note {
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px;
+}
+
+@media(max-width:600px) {
+    .hero h1 {
+        font-size: 27px;
+    }
 }
 </style>
 </head>
-<body><header>
+
+<body>
+
+<header>
+
 <button class="theme-btn secondary" id="themeBtn">🌙</button>
+
 <h1>🏆 منصة التفوق</h1>
 <p>في الدراسات الاجتماعية</p>
 <p>الصف الثاني الإعدادي - الترم الأول</p>
-</header><main>
+
+</header>
+
+<main>
+
 <section class="container hero">
+
 <div class="hero-icon">📚</div>
+
 <h1>أهلاً بك في منصة التفوق</h1>
+
 <p>
 رحلتك نحو التفوق في الدراسات الاجتماعية تبدأ من هنا.
 تابع دروسك، شاهد الشروحات، اختبر معلوماتك وتابع نتائجك.
-</p><a href="login.html"><button>تسجيل الدخول</button></a>
-<a href="register.html"><button class="secondary">إنشاء حساب طالب</button></a>
+</p>
 
-</section><section class="features">
+<a href="login.html">
+<button>تسجيل الدخول</button>
+</a>
+
+<a href="register.html">
+<button class="secondary">إنشاء حساب طالب</button>
+</a>
+
+<!-- زر تثبيت التطبيق -->
+<button id="installBtn" class="install-btn">
+📲 تثبيت المنصة على الهاتف
+</button>
+
+<p class="install-note" id="installNote">
+يمكنك إضافة المنصة إلى الشاشة الرئيسية لهاتفك.
+</p>
+
+</section>
+
+<section class="features">
+
 <div class="feature">
 <span>📖</span>
 <h3>الدروس التعليمية</h3>
 <p>شرح الدروس والملخصات والملفات التعليمية.</p>
-</div><div class="feature">
+</div>
+
+<div class="feature">
 <span>📝</span>
 <h3>الامتحانات</h3>
 <p>اختبر معلوماتك وتابع نتائج امتحاناتك.</p>
-</div><div class="feature">
+</div>
+
+<div class="feature">
 <span>🏆</span>
 <h3>الدرجات والنتائج</h3>
 <p>تابع درجاتك ومستواك الدراسي.</p>
-</div><div class="feature">
+</div>
+
+<div class="feature">
 <span>📢</span>
 <h3>الإعلانات</h3>
 <p>تابع آخر أخبار المنصة والإعلانات الجديدة.</p>
 </div>
+
 </section>
-</main><footer>
+
+</main>
+
+<footer>
 جميع الحقوق محفوظة © منصة التفوق في الدراسات الاجتماعية
-</footer><script>
+</footer>
+
+<script>
+
+// الوضع الليلي
 const themeBtn = document.getElementById("themeBtn");
 
 if(localStorage.getItem("tafawokTheme")==="dark"){
@@ -89,9 +192,87 @@ if(localStorage.getItem("tafawokTheme")==="dark"){
 
 themeBtn.onclick=()=>{
     document.body.classList.toggle("dark");
+
     const dark=document.body.classList.contains("dark");
+
     localStorage.setItem("tafawokTheme",dark?"dark":"light");
+
     themeBtn.textContent=dark?"☀️":"🌙";
 };
-</script></body>
+
+
+// تثبيت التطبيق
+let deferredPrompt;
+
+const installBtn = document.getElementById("installBtn");
+const installNote = document.getElementById("installNote");
+
+window.addEventListener("beforeinstallprompt", (e) => {
+
+    e.preventDefault();
+
+    deferredPrompt = e;
+
+    installBtn.classList.add("show");
+
+    installNote.textContent = "اضغط لتثبيت المنصة على هاتفك.";
+
+});
+
+installBtn.addEventListener("click", async () => {
+
+    if(deferredPrompt){
+
+        deferredPrompt.prompt();
+
+        const result = await deferredPrompt.userChoice;
+
+        if(result.outcome === "accepted"){
+
+            installBtn.classList.remove("show");
+
+            installNote.textContent = "تم طلب تثبيت المنصة.";
+
+        }
+
+        deferredPrompt = null;
+
+    } else {
+
+        installNote.textContent =
+        "افتح قائمة المتصفح واختر إضافة إلى الشاشة الرئيسية أو تثبيت التطبيق.";
+
+    }
+
+});
+
+window.addEventListener("appinstalled", () => {
+
+    installBtn.classList.remove("show");
+
+    installNote.textContent = "تم تثبيت منصة التفوق بنجاح!";
+
+});
+
+
+// تسجيل Service Worker
+if("serviceWorker" in navigator){
+
+    window.addEventListener("load", () => {
+
+        navigator.serviceWorker.register("./service-worker.js")
+        .then(() => {
+            console.log("PWA Ready");
+        })
+        .catch(error => {
+            console.error("PWA Error:", error);
+        });
+
+    });
+
+}
+
+</script>
+
+</body>
 </html>
