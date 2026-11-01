@@ -1,0 +1,110 @@
+<!DOCTYPE html><html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>درجاتي | منصة التفوق</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    body { padding: 20px; }
+    main { max-width: 850px; margin: 25px auto; }
+    header, .grade-card {
+      padding: 20px;
+      margin-bottom: 18px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.2);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(255,255,255,.3);
+    }
+    .back { display: inline-block; margin-bottom: 15px; }
+    .score { font-size: 25px; font-weight: bold; }
+    .date { opacity: .7; font-size: 13px; }
+    #message { text-align: center; padding: 20px; }
+  </style>
+</head>
+<body>
+<main>
+  <a class="back" href="dashboard.html">⬅ العودة للوحة الطالب</a>  <header>
+    <h1>📊 درجاتي</h1>
+    <p>تابع نتائج امتحاناتك ودرجاتك المسجلة.</p>
+  </header>  <div id="message">جاري تحميل الدرجات...</div>
+  <section id="grades"></section>
+</main><script type="module">
+  import { auth, db } from "../firebase-config.js";
+
+  import { onAuthStateChanged } from
+    "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+  import {
+    collection, getDocs, query, where
+  } from
+    "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
+  const message = document.getElementById("message");
+  const container = document.getElementById("grades");
+
+  onAuthStateChanged(auth, async user => {
+    if (!user) {
+      location.replace("../login.html");
+      return;
+    }
+
+    try {
+      const snapshot = await getDocs(query(
+        collection(db, "grades"),
+        where("studentId", "==", user.uid)
+      ));
+
+      container.replaceChildren();
+
+      if (snapshot.empty) {
+        message.textContent = "لا توجد درجات مسجلة لك حتى الآن.";
+        return;
+      }
+
+      snapshot.forEach(item => {
+        const data = item.data();
+        const card = document.createElement("article");
+        card.className = "grade-card";
+
+        const title = document.createElement("h3");
+        title.textContent = data.title || data.examTitle ||
+          data.name || "درجة مسجلة";
+
+        const score = document.createElement("div");
+        score.className = "score";
+
+        const obtained = data.score ?? data.grade ?? data.mark ?? "—";
+        const total = data.total ?? data.maxScore;
+
+        score.textContent = total != null
+          ? `${obtained} / ${total}`
+          : `${obtained}`;
+
+        card.append(title, score);
+
+        if (data.type) {
+          const type = document.createElement("p");
+          type.textContent = "النوع: " + data.type;
+          card.appendChild(type);
+        }
+
+        if (data.createdAt?.toDate) {
+          const date = document.createElement("div");
+          date.className = "date";
+          date.textContent = data.createdAt.toDate().toLocaleDateString("ar-EG");
+          card.appendChild(date);
+        }
+
+        container.appendChild(card);
+      });
+
+      message.textContent = "";
+
+    } catch (error) {
+      console.error(error);
+      message.textContent =
+        "تعذر تحميل الدرجات. نحتاج مراجعة أسماء الحقول وقواعد Firestore.";
+    }
+  });
+</script></body>
+</html>
