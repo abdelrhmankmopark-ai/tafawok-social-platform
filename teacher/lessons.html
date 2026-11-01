@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إدارة الدروس | منصة التفوق</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+ margin:0;
+ padding:18px;
+ font-family:Arial,sans-serif;
+ background:#0b1220;
+ color:white;
+}
+
+.container{
+ max-width:950px;
+ margin:auto;
+}
+
+.header{
+ background:linear-gradient(135deg,#155eef,#7138e8);
+ padding:25px;
+ border-radius:20px;
+ margin-bottom:20px;
+}
+
+.header h1{margin:0 0 10px}
+
+.header p{margin:0;opacity:.85}
+
+.card{
+ background:#172235;
+ border:1px solid #293950;
+ border-radius:18px;
+ padding:20px;
+ margin-bottom:20px;
+}
+
+h2{margin-top:0}
+
+input,textarea,select{
+ width:100%;
+ padding:13px;
+ margin:8px 0 15px;
+ border-radius:10px;
+ border:1px solid #394b65;
+ background:#0b1220;
+ color:white;
+ font-size:15px;
+}
+
+textarea{
+ min-height:100px;
+ resize:vertical;
+}
+
+label{
+ display:block;
+ color:#cbd5e1;
+}
+
+button{
+ border:0;
+ padding:12px 18px;
+ border-radius:10px;
+ cursor:pointer;
+ font-size:15px;
+ color:white;
+ margin:4px;
+}
+
+.save{background:#155eef}
+.cancel{background:#64748b}
+.edit{background:#d97706}
+.delete{background:#dc3545}
+
+.lesson{
+ background:#0b1220;
+ border:1px solid #334155;
+ border-radius:14px;
+ padding:17px;
+ margin-top:12px;
+}
+
+.lesson h3{margin-top:0}
+
+.lesson p{
+ color:#cbd5e1;
+ line-height:1.7;
+}
+
+.lesson a{
+ color:#60a5fa;
+ word-break:break-all;
+}
+
+.actions{
+ margin-top:12px;
+}
+
+#message{
+ padding:12px;
+ border-radius:10px;
+ margin-bottom:15px;
+ display:none;
+}
+
+.success{background:#14532d}
+.error{background:#7f1d1d}
+
+#loading{
+ text-align:center;
+ padding:30px;
+}
+
+.empty{
+ text-align:center;
+ color:#94a3b8;
+ padding:25px;
+}
+
+.back{
+ display:inline-block;
+ margin-bottom:15px;
+ color:#93c5fd;
+ text-decoration:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<a class="back" href="dashboard.html">⬅ العودة إلى لوحة المدرس</a>
+
+<header class="header">
+<h1>🎓 إدارة الدروس</h1>
+<p>منصة التفوق للدراسات الاجتماعية</p>
+</header>
+
+<div id="loading">جاري التحقق من حساب المدرس...</div>
+
+<div id="app" hidden>
+
+<div id="message"></div>
+
+<section class="card">
+
+<h2 id="formTitle">➕ إضافة درس جديد</h2>
+
+<form id="lessonForm">
+
+<label>عنوان الدرس</label>
+<input
+ type="text"
+ id="title"
+ placeholder="اكتب عنوان الدرس"
+ required
+>
+
+<label>وصف الدرس</label>
+<textarea
+ id="description"
+ placeholder="اكتب وصف الدرس"
+></textarea>
+
+<label>نوع المحتوى</label>
+<select id="resourceType">
+<option value="video">فيديو</option>
+<option value="pdf">ملف PDF</option>
+<option value="url">رابط خارجي</option>
+</select>
+
+<label>رابط المحتوى</label>
+<input
+ type="url"
+ id="resourceUrl"
+ placeholder="https://..."
+>
+
+<button class="save" type="submit" id="saveBtn">
+حفظ الدرس
+</button>
+
+<button
+ class="cancel"
+ type="button"
+ id="cancelBtn"
+ hidden
+>
+إلغاء التعديل
+</button>
+
+</form>
+
+</section>
+
+<section class="card">
+
+<h2>📚 الدروس الحالية</h2>
+
+<div id="lessonsList">
+<div class="empty">جاري تحميل الدروس...</div>
+</div>
+
+</section>
+
+</div>
+</div>
+
+<script type="module">
+
+import {auth,db} from "../firebase-config.js";
+
+import {
+onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+import {
+collection,
+addDoc,
+getDocs,
+query,
+orderBy,
+serverTimestamp,
+doc,
+updateDoc,
+deleteDoc,
+deleteField
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
+
+const TEACHER_UID = "BjZsimAIgIUxSJDI8Z3K9huOO012";
+
+const loading = document.getElementById("loading");
+const app = document.getElementById("app");
+const form = document.getElementById("lessonForm");
+const list = document.getElementById("lessonsList");
+
+const titleInput = document.getElementById("title");
+const descriptionInput = document.getElementById("description");
+const resourceType = document.getElementById("resourceType");
+const resourceUrl = document.getElementById("resourceUrl");
+
+const saveBtn = document.getElementById("saveBtn");
+const cancelBtn = document.getElementById("cancelBtn");
+const formTitle = document.getElementById("formTitle");
+const message = document.getElementById("message");
+
+let editingId = null;
+let lessonsCache = [];
+
+
+function showMessage(text,type){
+
+message.textContent = text;
+message.className = type;
+message.style.display = "block";
+
+window.scrollTo({top:0,behavior:"smooth"});
+
+setTimeout(()=>{
+message.style.display = "none";
+},4000);
+
+}
+
+
+function resetForm(){
+
+form.reset();
+
+editingId = null;
+
+formTitle.textContent = "➕ إضافة درس جديد";
+saveBtn.textContent = "حفظ الدرس";
+cancelBtn.hidden = true;
+
+}
+
+
+cancelBtn.addEventListener("click",resetForm);
+
+
+async function loadLessons(){
+
+list.innerHTML = '<div class="empty">جاري تحميل الدروس...</div>';
+
+try{
+
+let snapshot;
+
+try{
+
+const q = query(
+collection(db,"lessons"),
+orderBy("createdAt","desc")
+);
+
+snapshot = await getDocs(q);
+
+}catch(error){
+
+snapshot = await getDocs(collection(db,"lessons"));
+
+}
+
+lessonsCache = snapshot.docs.map(d=>({
+id:d.id,
+...d.data()
+}));
+
+renderLessons();
+
+}catch(error){
+
+console.error(error);
+
+list.innerHTML =
+'<div class="empty">تعذر تحميل الدروس. راجع اتصال Firebase والقواعد.</div>';
+
+}
+
+}
+
+
+function renderLessons(){
+
+if(lessonsCache.length === 0){
+
+list.innerHTML =
+'<div class="empty">لا توجد دروس حتى الآن.</div>';
+
+return;
+
+}
+
+list.innerHTML = "";
+
+lessonsCache.forEach(lesson=>{
+
+const div = document.createElement("div");
+div.className = "lesson";
+
+const h3 = document.createElement("h3");
+h3.textContent = "📘 " + (lesson.title || "بدون عنوان");
+
+const p = document.createElement("p");
+p.textContent = lesson.description || "لا يوجد وصف";
+
+const link = document.createElement("a");
+
+const resource =
+lesson.pdf || lesson.video || lesson.url || "";
+
+if(resource){
+
+link.href = resource;
+link.target = "_blank";
+link.rel = "noopener noreferrer";
+link.textContent = "فتح المحتوى";
+
+}else{
+
+link.textContent = "لا يوجد رابط للمحتوى";
+link.removeAttribute("href");
+
+}
+
+const actions = document.createElement("div");
+actions.className = "actions";
+
+const editBtn = document.createElement("button");
+editBtn.className = "edit";
+editBtn.textContent = "✏️ تعديل";
+
+editBtn.addEventListener("click",()=>{
+editLesson(lesson.id);
+});
+
+const deleteBtn = document.createElement("button");
+deleteBtn.className = "delete";
+deleteBtn.textContent = "🗑️ حذف";
+
+deleteBtn.addEventListener("click",()=>{
+removeLesson(lesson.id);
+});
+
+actions.append(editBtn,deleteBtn);
+
+div.append(h3,p,link,actions);
+
+list.appendChild(div);
+
+});
+
+}
+
+
+function editLesson(id){
+
+const lesson = lessonsCache.find(item=>item.id === id);
+
+if(!lesson)return;
+
+editingId = id;
+
+titleInput.value = lesson.title || "";
+descriptionInput.value = lesson.description || "";
+
+if(lesson.pdf){
+resourceType.value = "pdf";
+resourceUrl.value = lesson.pdf;
+
+}else if(lesson.video){
+resourceType.value = "video";
+resourceUrl.value = lesson.video;
+
+}else{
+resourceType.value = "url";
+resourceUrl.value = lesson.url || "";
+}
+
+formTitle.textContent = "✏️ تعديل الدرس";
+saveBtn.textContent = "حفظ التعديلات";
+cancelBtn.hidden = false;
+
+window.scrollTo({top:0,behavior:"smooth"});
+
+}
+
+
+async function removeLesson(id){
+
+const confirmed = confirm(
+"هل أنت متأكد من حذف هذا الدرس؟ لا يمكن التراجع عن الحذف."
+);
+
+if(!confirmed)return;
+
+try{
+
+await deleteDoc(doc(db,"lessons",id));
+
+showMessage("تم حذف الدرس بنجاح","success");
+
+await loadLessons();
+
+}catch(error){
+
+console.error(error);
+
+showMessage("تعذر حذف الدرس: "+error.message,"error");
+
+}
+
+}
+
+
+form.addEventListener("submit",async(event)=>{
+
+event.preventDefault();
+
+const title = titleInput.value.trim();
+const description = descriptionInput.value.trim();
+const type = resourceType.value;
+const url = resourceUrl.value.trim();
+
+if(!title){
+
+showMessage("اكتب عنوان الدرس أولاً","error");
+return;
+
+}
+
+if(url){
+
+try{
+
+const parsed = new URL(url);
+
+if(parsed.protocol !== "https:"){
+
+showMessage("يجب أن يبدأ الرابط بـ https://","error");
+return;
+
+}
+
+}catch(error){
+
+showMessage("الرابط غير صحيح","error");
+return;
+
+}
+
+}
+
+const data = {
+
+title,
+description,
+
+pdf: deleteField(),
+video: deleteField(),
+url: deleteField()
+
+};
+
+if(url){
+data[type] = url;
+}
+
+saveBtn.disabled = true;
+
+try{
+
+if(editingId){
+
+await updateDoc(
+doc(db,"lessons",editingId),
+data
+);
+
+showMessage("تم تعديل الدرس بنجاح","success");
+
+}else{
+
+delete data.pdf;
+delete data.video;
+delete data.url;
+
+data.createdAt = serverTimestamp();
+
+if(url){
+data[type] = url;
+}
+
+await addDoc(
+collection(db,"lessons"),
+data
+);
+
+showMessage("تم إضافة الدرس بنجاح","success");
+
+}
+
+resetForm();
+
+await loadLessons();
+
+}catch(error){
+
+console.error(error);
+
+showMessage(
+"حدث خطأ أثناء الحفظ: "+error.message,
+"error"
+);
+
+}finally{
+
+saveBtn.disabled = false;
+
+}
+
+});
+
+
+onAuthStateChanged(auth,async(user)=>{
+
+if(!user){
+
+location.replace("../login.html");
+return;
+
+}
+
+if(user.uid !== TEACHER_UID){
+
+loading.textContent = "ليس لديك صلاحية دخول هذه الصفحة.";
+return;
+
+}
+
+loading.hidden = true;
+app.hidden = false;
+
+await loadLessons();
+
+});
+
+</script>
+
+</body>
+</html>
