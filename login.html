@@ -1,0 +1,104 @@
+<!DOCTYPE html><html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تسجيل الدخول | منصة التفوق</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.login-box {
+    max-width: 440px;
+    margin: 55px auto;
+    text-align: center;
+}
+.logo {font-size: 55px}
+.login-box h2 {color:#1455a0}
+.back-link {
+    display:block;
+    margin-top:20px;
+    text-decoration:none;
+}
+</style>
+</head>
+<body><header>
+<h1>🏆 منصة التفوق</h1>
+<p>في الدراسات الاجتماعية</p>
+</header><main class="container login-box">
+<div class="logo">🔐</div>
+<h2>تسجيل الدخول</h2>
+<p>أهلاً بك مرة أخرى!</p><form id="loginForm">
+<input id="email" type="email"
+placeholder="البريد الإلكتروني" required><input id="password" type="password"
+placeholder="كلمة المرور" required>
+
+<button id="loginBtn" type="submit">دخول إلى المنصة</button>
+
+</form><p id="message" class="message"></p><a class="back-link" href="forgot.html">نسيت كلمة المرور؟</a>
+
+<a class="back-link" href="register.html">إنشاء حساب طالب جديد</a>
+
+<a class="back-link" href="index.html">العودة للرئيسية</a>
+
+</main><footer>
+جميع الحقوق محفوظة © منصة التفوق
+</footer><script type="module">
+import { auth } from "./firebase-config.js";
+
+import {
+signInWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+const TEACHER_UID = "BjZsimAIgIUxSJDI8Z3K9huOO012";
+
+const form = document.getElementById("loginForm");
+const btn = document.getElementById("loginBtn");
+const output = document.getElementById("message");
+
+function showMessage(text,success=false){
+output.textContent=text;
+output.style.color=success?"green":"#b42318";
+}
+
+form.addEventListener("submit",async(event)=>{
+event.preventDefault();
+
+const email=document.getElementById("email").value.trim();
+const password=document.getElementById("password").value;
+
+if(!email||!password){
+showMessage("اكتب البريد الإلكتروني وكلمة المرور.");
+return;
+}
+
+btn.disabled=true;
+btn.textContent="جاري تسجيل الدخول...";
+
+try{
+const result=await signInWithEmailAndPassword(
+auth,email,password
+);
+
+showMessage("تم تسجيل الدخول بنجاح.",true);
+
+if(result.user.uid===TEACHER_UID){
+window.location.href="teacher/dashboard.html";
+}else{
+window.location.href="student/dashboard.html";
+}
+
+}catch(error){
+console.error(error);
+
+if(error.code==="auth/invalid-credential"){
+showMessage("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+}else if(error.code==="auth/too-many-requests"){
+showMessage("محاولات كثيرة. حاول مرة أخرى لاحقاً.");
+}else{
+showMessage("تعذر تسجيل الدخول. تحقق من الاتصال والبيانات.");
+}
+
+btn.disabled=false;
+btn.textContent="دخول إلى المنصة";
+}
+});
+</script></body>
+</html>
