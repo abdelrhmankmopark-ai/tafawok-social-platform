@@ -232,6 +232,10 @@ body{
 </a><a class="section-card" href="profile.html">
 <span class="icon">👤</span>
 <h3>الملف الشخصي</h3>
+</a><!-- المعلم الذكي --><a class="section-card" href="ai-tutor.html">
+<span class="icon">🤖</span>
+<h3>المعلم الذكي</h3>
+<span class="card-count">اسأل وتعلّم</span>
 </a></section><button class="logout" id="logoutBtn">
 تسجيل الخروج
 </button></main><script type="module">
@@ -306,8 +310,6 @@ setCount("lessonsBadge",lessons+" درس");
 setCount("examsBadge",exams+" امتحان");
 setCount("announcementsBadge",announcements+" إعلان");
 
-// حساب الإشعارات غير المقروءة
-
 const readItems=getReadItems();
 const allIds=[];
 
@@ -342,8 +344,6 @@ loadError.style.display="none";
 
 }
 
-// إيقاف المستمعين السابقين
-
 function stopLiveUpdates(){
 
 unsubscribeListeners.forEach(unsubscribe=>{
@@ -354,8 +354,6 @@ unsubscribeListeners=[];
 
 }
 
-// تشغيل التحديث المباشر
-
 function startLiveUpdates(){
 
 if(!currentUser)return;
@@ -364,8 +362,6 @@ stopLiveUpdates();
 
 refreshBtn.disabled=true;
 refreshBtn.textContent="جاري تحميل التنبيهات...";
-
-// متابعة الدروس مباشرة
 
 const stopLessons=onSnapshot(
 collection(db,"lessons"),
@@ -386,8 +382,6 @@ showLiveError(error);
 
 );
 
-// متابعة الإعلانات مباشرة
-
 const stopAnnouncements=onSnapshot(
 collection(db,"announcements"),
 
@@ -406,8 +400,6 @@ showLiveError(error);
 }
 
 );
-
-// متابعة الامتحانات المنشورة مباشرة
 
 const stopExams=onSnapshot(
 query(
@@ -496,8 +488,6 @@ studentData.name||user.displayName||"الطالب";
 loading.hidden=true;
 dashboard.hidden=false;
 
-// بدء التحديث المباشر
-
 startLiveUpdates();
 
 }catch(error){
@@ -510,8 +500,6 @@ loading.textContent=
 }
 
 });
-
-// زر التحديث اليدوي يعيد حساب الأعداد من البيانات الحالية
 
 refreshBtn.addEventListener("click",()=>{
 
@@ -531,8 +519,6 @@ refreshBtn.textContent="🔄 تحديث التنبيهات";
 
 });
 
-// تسجيل الخروج
-
 logoutBtn.addEventListener("click",async()=>{
 
 try{
@@ -549,8 +535,6 @@ alert("تعذر تسجيل الخروج. حاول مرة أخرى.");
 }
 
 });
-
-// تنظيف المستمعين عند مغادرة الصفحة
 
 window.addEventListener("pagehide",stopLiveUpdates);
 
