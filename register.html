@@ -1,0 +1,129 @@
+<!DOCTYPE html><html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>إنشاء حساب | منصة التفوق</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.register-box {
+    max-width: 460px;
+    margin: 45px auto;
+    text-align: center;
+}
+.logo {font-size:55px}
+.register-box h2 {color:#1455a0}
+.back-link {
+    display:block;
+    margin-top:18px;
+    text-decoration:none;
+}
+</style>
+</head>
+<body><header>
+<h1>🏆 منصة التفوق</h1>
+<p>في الدراسات الاجتماعية</p>
+</header><main class="container register-box">
+<div class="logo">🎓</div>
+<h2>إنشاء حساب طالب</h2>
+<p>ابدأ رحلتك نحو التفوق!</p><form id="registerForm"><input id="name" type="text"
+placeholder="الاسم بالكامل" required>
+
+<input id="email" type="email"
+placeholder="البريد الإلكتروني" required>
+
+<input id="password" type="password"
+placeholder="كلمة المرور (6 أحرف على الأقل)"
+minlength="6" required>
+
+<button id="registerBtn" type="submit">
+إنشاء الحساب
+</button></form><p id="message" class="message"></p><a class="back-link" href="login.html">لديك حساب؟ تسجيل الدخول</a>
+<a class="back-link" href="index.html">العودة للرئيسية</a>
+
+</main><footer>
+جميع الحقوق محفوظة © منصة التفوق
+</footer><script type="module">
+import { auth, db } from "./firebase-config.js";
+
+import {
+createUserWithEmailAndPassword,
+updateProfile
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+import {
+doc,
+setDoc,
+serverTimestamp
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
+const form = document.getElementById("registerForm");
+const btn = document.getElementById("registerBtn");
+const output = document.getElementById("message");
+
+function showMessage(text,success=false){
+output.textContent=text;
+output.style.color=success?"green":"#b42318";
+}
+
+form.addEventListener("submit",async(event)=>{
+event.preventDefault();
+
+const name=document.getElementById("name").value.trim();
+const email=document.getElementById("email").value.trim();
+const password=document.getElementById("password").value;
+
+if(!name||!email||!password){
+showMessage("املأ جميع البيانات.");
+return;
+}
+
+if(password.length<6){
+showMessage("كلمة المرور يجب أن تكون 6 أحرف على الأقل.");
+return;
+}
+
+btn.disabled=true;
+btn.textContent="جاري إنشاء الحساب...";
+
+try{
+
+const result=await createUserWithEmailAndPassword(
+auth,email,password
+);
+
+await updateProfile(result.user,{
+displayName:name
+});
+
+await setDoc(doc(db,"students",result.user.uid),{
+name,
+email,
+createdAt:serverTimestamp(),
+status:"active"
+});
+
+showMessage("تم إنشاء الحساب بنجاح!",true);
+
+setTimeout(()=>{
+window.location.href="student/dashboard.html";
+},1200);
+
+}catch(error){
+
+console.error(error);
+
+if(error.code==="auth/email-already-in-use"){
+showMessage("هذا البريد الإلكتروني مسجل بالفعل.");
+}else if(error.code==="auth/weak-password"){
+showMessage("كلمة المرور ضعيفة.");
+}else{
+showMessage("تعذر إنشاء الحساب: "+error.message);
+}
+
+btn.disabled=false;
+btn.textContent="إنشاء الحساب";
+
+}
+});
+</script></body>
+</html>
