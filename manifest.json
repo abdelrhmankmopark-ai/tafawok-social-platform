@@ -1,0 +1,22 @@
+{
+  "id": "./",
+  "name": "منصة التفوق في الدراسات الاجتماعية",
+  "short_name": "منصة التفوق",
+  "description": "منصة الدراسات الاجتماعية للصف الثاني الإعدادي",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#1455a0",
+  "icons": [
+    {
+      "src": "images/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
