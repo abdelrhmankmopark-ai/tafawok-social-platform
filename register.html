@@ -1,129 +1,302 @@
-<!DOCTYPE html><html lang="ar" dir="rtl">
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>إنشاء حساب | منصة التفوق</title>
-<link rel="stylesheet" href="css/style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إنشاء حساب طالب | منصة التفوق</title>
+
 <style>
-.register-box {
-    max-width: 460px;
-    margin: 45px auto;
-    text-align: center;
+*{box-sizing:border-box}
+
+body{
+ margin:0;
+ min-height:100vh;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ padding:20px;
+ font-family:Arial,sans-serif;
+ background:linear-gradient(135deg,#071326,#102d59,#263c80);
+ color:white;
 }
-.logo {font-size:55px}
-.register-box h2 {color:#1455a0}
-.back-link {
-    display:block;
-    margin-top:18px;
-    text-decoration:none;
+
+.box{
+ width:100%;
+ max-width:430px;
+ padding:30px 25px;
+ border-radius:25px;
+ background:rgba(255,255,255,.09);
+ border:1px solid rgba(255,255,255,.2);
+ backdrop-filter:blur(18px);
+ box-shadow:0 15px 45px #0005;
 }
+
+.logo{
+ text-align:center;
+ font-size:45px;
+}
+
+h1{
+ text-align:center;
+ margin:10px 0;
+ font-size:27px;
+}
+
+.subtitle{
+ text-align:center;
+ color:#c5d5ee;
+ margin-bottom:25px;
+}
+
+label{
+ display:block;
+ margin:15px 0 8px;
+}
+
+input{
+ width:100%;
+ padding:15px;
+ border:1px solid #ffffff35;
+ border-radius:12px;
+ background:#ffffff12;
+ color:white;
+ outline:none;
+ font-size:16px;
+}
+
+input::placeholder{color:#c0cce0}
+
+input:focus{
+ border-color:#65a4ff;
+}
+
+button{
+ width:100%;
+ padding:15px;
+ margin-top:22px;
+ border:0;
+ border-radius:12px;
+ background:linear-gradient(135deg,#1769ff,#7138e8);
+ color:white;
+ font-size:17px;
+ font-weight:bold;
+ cursor:pointer;
+}
+
+button:disabled{
+ opacity:.6;
+ cursor:not-allowed;
+}
+
+.message{
+ display:none;
+ margin-top:15px;
+ padding:12px;
+ border-radius:10px;
+ text-align:center;
+ line-height:1.6;
+}
+
+.success{
+ display:block;
+ background:#12643d;
+}
+
+.error{
+ display:block;
+ background:#7b2430;
+}
+
+.login{
+ text-align:center;
+ margin-top:22px;
+ color:#d0dcf0;
+}
+
+.login a{
+ color:#80b5ff;
+ text-decoration:none;
+ font-weight:bold;
+}
+
 </style>
 </head>
-<body><header>
-<h1>🏆 منصة التفوق</h1>
-<p>في الدراسات الاجتماعية</p>
-</header><main class="container register-box">
+
+<body>
+
+<div class="box">
+
 <div class="logo">🎓</div>
-<h2>إنشاء حساب طالب</h2>
-<p>ابدأ رحلتك نحو التفوق!</p><form id="registerForm"><input id="name" type="text"
-placeholder="الاسم بالكامل" required>
 
-<input id="email" type="email"
-placeholder="البريد الإلكتروني" required>
+<h1>إنشاء حساب طالب</h1>
+<p class="subtitle">انضم إلى منصة التفوق للدراسات الاجتماعية</p>
 
-<input id="password" type="password"
-placeholder="كلمة المرور (6 أحرف على الأقل)"
-minlength="6" required>
+<form id="registerForm">
 
-<button id="registerBtn" type="submit">
+<label for="name">الاسم بالكامل</label>
+<input
+ type="text"
+ id="name"
+ placeholder="اكتب اسمك بالكامل"
+ required
+ minlength="3"
+ autocomplete="name"
+>
+
+<label for="email">البريد الإلكتروني</label>
+<input
+ type="email"
+ id="email"
+ placeholder="example@email.com"
+ required
+ autocomplete="email"
+>
+
+<label for="password">كلمة المرور</label>
+<input
+ type="password"
+ id="password"
+ placeholder="6 أحرف على الأقل"
+ required
+ minlength="6"
+ autocomplete="new-password"
+>
+
+<label for="confirmPassword">تأكيد كلمة المرور</label>
+<input
+ type="password"
+ id="confirmPassword"
+ placeholder="أعد كتابة كلمة المرور"
+ required
+ minlength="6"
+ autocomplete="new-password"
+>
+
+<button type="submit" id="submitBtn">
 إنشاء الحساب
-</button></form><p id="message" class="message"></p><a class="back-link" href="login.html">لديك حساب؟ تسجيل الدخول</a>
-<a class="back-link" href="index.html">العودة للرئيسية</a>
+</button>
 
-</main><footer>
-جميع الحقوق محفوظة © منصة التفوق
-</footer><script type="module">
-import { auth, db } from "./firebase-config.js";
+<div id="message" class="message"></div>
+
+</form>
+
+<div class="login">
+لديك حساب بالفعل؟
+<a href="login.html">تسجيل الدخول</a>
+</div>
+
+</div>
+
+<script type="module">
+
+import {auth,db} from "./firebase-config.js";
 
 import {
-createUserWithEmailAndPassword,
-updateProfile
+ createUserWithEmailAndPassword,
+ updateProfile
 } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
 
 import {
-doc,
-setDoc,
-serverTimestamp
+ doc,
+ setDoc,
+ serverTimestamp
 } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
 const form = document.getElementById("registerForm");
-const btn = document.getElementById("registerBtn");
-const output = document.getElementById("message");
+const button = document.getElementById("submitBtn");
+const message = document.getElementById("message");
 
-function showMessage(text,success=false){
-output.textContent=text;
-output.style.color=success?"green":"#b42318";
+function showMessage(text,type){
+ message.textContent = text;
+ message.className = "message " + type;
 }
 
-form.addEventListener("submit",async(event)=>{
-event.preventDefault();
+form.addEventListener("submit",async(e)=>{
 
-const name=document.getElementById("name").value.trim();
-const email=document.getElementById("email").value.trim();
-const password=document.getElementById("password").value;
+ e.preventDefault();
 
-if(!name||!email||!password){
-showMessage("املأ جميع البيانات.");
-return;
-}
+ const name = document.getElementById("name").value.trim();
+ const email = document.getElementById("email").value.trim();
+ const password = document.getElementById("password").value;
+ const confirmPassword = document.getElementById("confirmPassword").value;
 
-if(password.length<6){
-showMessage("كلمة المرور يجب أن تكون 6 أحرف على الأقل.");
-return;
-}
+ if(name.length < 3){
+  showMessage("اكتب اسمًا صحيحًا لا يقل عن 3 أحرف.","error");
+  return;
+ }
 
-btn.disabled=true;
-btn.textContent="جاري إنشاء الحساب...";
+ if(password.length < 6){
+  showMessage("كلمة المرور يجب أن تكون 6 أحرف على الأقل.","error");
+  return;
+ }
 
-try{
+ if(password !== confirmPassword){
+  showMessage("كلمتا المرور غير متطابقتين.","error");
+  return;
+ }
 
-const result=await createUserWithEmailAndPassword(
-auth,email,password
-);
+ button.disabled = true;
+ button.textContent = "جاري إنشاء الحساب...";
 
-await updateProfile(result.user,{
-displayName:name
+ try{
+
+  const result = await createUserWithEmailAndPassword(
+   auth,
+   email,
+   password
+  );
+
+  const user = result.user;
+
+  await updateProfile(user,{
+   displayName:name
+  });
+
+  await setDoc(doc(db,"students",user.uid),{
+   name:name,
+   email:email,
+   createdAt:serverTimestamp(),
+   status:"active"
+  });
+
+  showMessage("تم إنشاء الحساب بنجاح! جاري تحويلك...","success");
+
+  setTimeout(()=>{
+   location.href = "student/dashboard.html";
+  },1500);
+
+ }catch(error){
+
+  console.error(error);
+
+  let errorText = "حدث خطأ أثناء إنشاء الحساب.";
+
+  if(error.code === "auth/email-already-in-use"){
+   errorText = "هذا البريد الإلكتروني مسجل بالفعل.";
+  }
+  else if(error.code === "auth/invalid-email"){
+   errorText = "البريد الإلكتروني غير صحيح.";
+  }
+  else if(error.code === "auth/weak-password"){
+   errorText = "كلمة المرور ضعيفة.";
+  }
+  else if(error.code === "auth/network-request-failed"){
+   errorText = "تحقق من اتصال الإنترنت.";
+  }
+  else if(error.code === "permission-denied"){
+   errorText = "لا توجد صلاحية لحفظ بيانات الطالب. راجع قواعد Firestore.";
+  }
+
+  showMessage(errorText,"error");
+
+  button.disabled = false;
+  button.textContent = "إنشاء الحساب";
+
+ }
+
 });
 
-await setDoc(doc(db,"students",result.user.uid),{
-name,
-email,
-createdAt:serverTimestamp(),
-status:"active"
-});
+</script>
 
-showMessage("تم إنشاء الحساب بنجاح!",true);
-
-setTimeout(()=>{
-window.location.href="student/dashboard.html";
-},1200);
-
-}catch(error){
-
-console.error(error);
-
-if(error.code==="auth/email-already-in-use"){
-showMessage("هذا البريد الإلكتروني مسجل بالفعل.");
-}else if(error.code==="auth/weak-password"){
-showMessage("كلمة المرور ضعيفة.");
-}else{
-showMessage("تعذر إنشاء الحساب: "+error.message);
-}
-
-btn.disabled=false;
-btn.textContent="إنشاء الحساب";
-
-}
-});
-</script></body>
+</body>
 </html>
