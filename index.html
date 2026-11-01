@@ -203,7 +203,7 @@ let activeExamId = null;
 let activeAttemptId = null;
 let activeExamQuestions = [];
 let activeAnswers = {};
-let savingAnswer = false;
+let answerSaveQueue = Promise.resolve();
 
 window.showPage = function(page){
 document.querySelectorAll(".container").forEach(x=>x.classList.add("hidden"));
@@ -283,7 +283,9 @@ btn.disabled=false;
 document.getElementById("loginBtn").onclick=async()=>{
 const email=document.getElementById("loginEmail").value.trim();
 const password=document.getElementById("loginPassword").value;
-if(!email||!password)return message("loginMessage","اكتب البريد وكلمة المرور.");
+
+if(!email||!password)
+return message("loginMessage","اكتب البريد وكلمة المرور.");
 
 try{
 await signInWithEmailAndPassword(auth,email,password);
@@ -296,7 +298,10 @@ message("loginMessage","تعذر تسجيل الدخول. راجع بيانات�
 // استعادة كلمة المرور
 document.getElementById("forgotBtn").onclick=async()=>{
 const email=document.getElementById("forgotEmail").value.trim();
-if(!email)return message("forgotMessage","اكتب البريد الإلكتروني.");
+
+if(!email)
+return message("forgotMessage","اكتب البريد الإلكتروني.");
+
 try{
 await sendPasswordResetEmail(auth,email);
 message("forgotMessage","إذا كان البريد مسجلاً، ستصلك رسالة الاستعادة.",true);
@@ -330,22 +335,29 @@ document.getElementById("studentName").textContent=
 const lessons=await getDocs(collection(db,"lessons"));
 lessonsBox.replaceChildren();
 
-if(lessons.empty)lessonsBox.textContent="لا توجد دروس منشورة حتى الآن.";
+if(lessons.empty)
+lessonsBox.textContent="لا توجد دروس منشورة حتى الآن.";
+
 lessons.forEach(item=>{
 const d=item.data();
 const card=makeCard(lessonsBox,d.title,d.description);
+
 if(d.unit){
 const p=document.createElement("p");
 p.textContent="الوحدة: "+d.unit;
 card.appendChild(p);
 }
+
 safeLink(card,"مشاهدة الفيديو",d.videoUrl);
 safeLink(card,"فتح ملف PDF",d.pdfUrl);
 });
 
 const announcements=await getDocs(collection(db,"announcements"));
 announcementsBox.replaceChildren();
-if(announcements.empty)announcementsBox.textContent="لا توجد إعلانات حالياً.";
+
+if(announcements.empty)
+announcementsBox.textContent="لا توجد إعلانات حالياً.";
+
 announcements.forEach(item=>{
 const d=item.data();
 makeCard(announcementsBox,d.title,d.message);
@@ -375,7 +387,8 @@ gradesBox.textContent="تعذر تحميل الدرجات.";
 
 // إضافة درس
 document.getElementById("addLessonBtn").onclick=async()=>{
-if(!isTeacher(auth.currentUser))return message("lessonMessage","غير مصرح لك.");
+if(!isTeacher(auth.currentUser))
+return message("lessonMessage","غير مصرح لك.");
 
 const title=document.getElementById("lessonTitle").value.trim();
 const unit=document.getElementById("lessonUnit").value.trim();
@@ -383,16 +396,20 @@ const description=document.getElementById("lessonDescription").value.trim();
 const videoUrl=document.getElementById("lessonVideo").value.trim();
 const pdfUrl=document.getElementById("lessonPdf").value.trim();
 
-if(!title)return message("lessonMessage","اكتب عنوان الدرس.");
+if(!title)
+return message("lessonMessage","اكتب عنوان الدرس.");
 
 try{
 await addDoc(collection(db,"lessons"),{
 title,unit,description,videoUrl,pdfUrl,
 createdAt:serverTimestamp()
 });
+
 message("lessonMessage","تم نشر الدرس بنجاح.",true);
+
 ["lessonTitle","lessonUnit","lessonDescription","lessonVideo","lessonPdf"]
 .forEach(id=>document.getElementById(id).value="");
+
 }catch(error){
 console.error(error);
 message("lessonMessage","فشل نشر الدرس: "+error.message);
@@ -401,20 +418,25 @@ message("lessonMessage","فشل نشر الدرس: "+error.message);
 
 // نشر إعلان
 document.getElementById("addAnnouncementBtn").onclick=async()=>{
-if(!isTeacher(auth.currentUser))return message("announcementStatus","غير مصرح لك.");
+if(!isTeacher(auth.currentUser))
+return message("announcementStatus","غير مصرح لك.");
 
 const title=document.getElementById("announcementTitle").value.trim();
 const text=document.getElementById("announcementMessage").value.trim();
 
-if(!title||!text)return message("announcementStatus","اكتب العنوان ونص الإعلان.");
+if(!title||!text)
+return message("announcementStatus","اكتب العنوان ونص الإعلان.");
 
 try{
 await addDoc(collection(db,"announcements"),{
 title,message:text,createdAt:serverTimestamp()
 });
+
 message("announcementStatus","تم نشر الإعلان.",true);
+
 document.getElementById("announcementTitle").value="";
 document.getElementById("announcementMessage").value="";
+
 }catch(error){
 console.error(error);
 message("announcementStatus","تعذر نشر الإعلان: "+error.message);
@@ -424,7 +446,9 @@ message("announcementStatus","تعذر نشر الإعلان: "+error.message);
 // عرض الطلاب للأستاذ
 document.getElementById("loadStudentsBtn").onclick=async()=>{
 const box=document.getElementById("studentsList");
+
 if(!isTeacher(auth.currentUser))return;
+
 box.textContent="جاري تحميل الطلاب...";
 
 try{
@@ -439,6 +463,7 @@ return;
 result.forEach(item=>{
 const d=item.data();
 const card=makeCard(box,d.name||"طالب",d.email||"");
+
 const id=document.createElement("p");
 id.className="small";
 id.textContent="UID: "+item.id;
@@ -451,17 +476,22 @@ card.appendChild(status);
 const btn=document.createElement("button");
 btn.className="secondary";
 btn.textContent=d.status==="suspended"?"إعادة تفعيل الحساب":"إيقاف الحساب";
+
 btn.onclick=async()=>{
 try{
 await updateDoc(doc(db,"students",item.id),{
 status:d.status==="suspended"?"active":"suspended"
 });
+
 message("gradeMessage","تم تحديث حالة الطالب.",true);
 document.getElementById("loadStudentsBtn").click();
+
 }catch(error){
+console.error(error);
 message("gradeMessage","تعذر تحديث حالة الطالب.");
 }
 };
+
 card.appendChild(btn);
 
 const gradeBtn=document.createElement("button");
@@ -472,6 +502,7 @@ document.getElementById("gradeStudentId").value=item.id;
 };
 card.appendChild(gradeBtn);
 });
+
 }catch(error){
 console.error(error);
 box.textContent="تعذر تحميل الطلاب.";
@@ -480,14 +511,18 @@ box.textContent="تعذر تحميل الطلاب.";
 
 // حفظ درجات الطالب
 document.getElementById("saveGradesBtn").onclick=async()=>{
-if(!isTeacher(auth.currentUser))return message("gradeMessage","غير مصرح لك.");
+if(!isTeacher(auth.currentUser))
+return message("gradeMessage","غير مصرح لك.");
 
 const uid=document.getElementById("gradeStudentId").value.trim();
 const exam=document.getElementById("examGrade").value;
 const homework=document.getElementById("homeworkGrade").value;
 
-if(!uid)return message("gradeMessage","اكتب UID الطالب أو اختره من القائمة.");
-if(exam===""||homework==="")return message("gradeMessage","اكتب الدرجتين.");
+if(!uid)
+return message("gradeMessage","اكتب UID الطالب أو اختره من القائمة.");
+
+if(exam===""||homework==="")
+return message("gradeMessage","اكتب الدرجتين.");
 
 const examNumber=Number(exam);
 const homeworkNumber=Number(homework);
@@ -502,7 +537,9 @@ examGrade:examNumber,
 homeworkGrade:homeworkNumber,
 updatedAt:serverTimestamp()
 });
+
 message("gradeMessage","تم حفظ الدرجات بنجاح.",true);
+
 }catch(error){
 console.error(error);
 message("gradeMessage","تعذر حفظ الدرجات: "+error.message);
@@ -538,7 +575,8 @@ const text=document.getElementById("questionTextInput").value.trim();
 const type=document.getElementById("questionTypeInput").value;
 const correct=Number(document.getElementById("correctAnswerInput").value);
 
-if(!text)return message("examTeacherMessage","اكتب نص السؤال.");
+if(!text)
+return message("examTeacherMessage","اكتب نص السؤال.");
 
 let options=[];
 
@@ -562,12 +600,11 @@ return message("examTeacherMessage","حدد إجابة صحيحة.");
 
 draftQuestions.push({
 id:"q"+Date.now()+"_"+draftQuestions.length,
-text,type,options
+text,type,options,correctAnswer:correct
 });
 
-draftQuestions[draftQuestions.length-1].correctAnswer=correct;
-
 document.getElementById("questionTextInput").value="";
+
 ["option1Input","option2Input","option3Input","option4Input"]
 .forEach(id=>document.getElementById(id).value="");
 
@@ -581,6 +618,7 @@ box.replaceChildren();
 
 draftQuestions.forEach((q,index)=>{
 const card=makeCard(box,"السؤال "+(index+1),q.text);
+
 const p=document.createElement("p");
 p.textContent="نوع السؤال: "+(q.type==="mcq"?"اختيار من متعدد":"صح أو خطأ");
 card.appendChild(p);
@@ -588,10 +626,12 @@ card.appendChild(p);
 const btn=document.createElement("button");
 btn.className="danger";
 btn.textContent="حذف السؤال";
+
 btn.onclick=()=>{
 draftQuestions.splice(index,1);
 renderDraftQuestions();
 };
+
 card.appendChild(btn);
 });
 
@@ -601,19 +641,20 @@ document.getElementById("questionCount").textContent=
 
 // نشر امتحان
 document.getElementById("publishExamBtn").onclick=async()=>{
-if(!isTeacher(auth.currentUser))return message("examTeacherMessage","غير مصرح لك.");
+if(!isTeacher(auth.currentUser))
+return message("examTeacherMessage","غير مصرح لك.");
 
 const title=document.getElementById("examTitleInput").value.trim();
 const description=document.getElementById("examDescriptionInput").value.trim();
 
-if(!title)return message("examTeacherMessage","اكتب عنوان الامتحان.");
-if(draftQuestions.length===0)return message("examTeacherMessage","أضف سؤالاً واحداً على الأقل.");
+if(!title)
+return message("examTeacherMessage","اكتب عنوان الامتحان.");
+
+if(draftQuestions.length===0)
+return message("examTeacherMessage","أضف سؤالاً واحداً على الأقل.");
 
 const publicQuestions=draftQuestions.map(q=>({
-id:q.id,
-text:q.text,
-type:q.type,
-options:q.options
+id:q.id,text:q.text,type:q.type,options:q.options
 }));
 
 const answerKey={};
@@ -625,22 +666,29 @@ const btn=document.getElementById("publishExamBtn");
 btn.disabled=true;
 
 try{
+// ينشأ الامتحان غير منشور أولاً
 const examRef=await addDoc(collection(db,"exams"),{
 title,description,
 questions:publicQuestions,
-isPublished:true,
+isPublished:false,
 createdAt:serverTimestamp()
 });
 
+// حفظ نموذج الإجابة قبل إتاحة الامتحان للطلاب
 await setDoc(doc(db,"examAnswerKeys",examRef.id),{
 answers:answerKey,
 createdAt:serverTimestamp()
 });
 
+// نشر الامتحان بعد نجاح حفظ نموذج الإجابة
+await updateDoc(examRef,{isPublished:true});
+
 draftQuestions=[];
 renderDraftQuestions();
+
 document.getElementById("examTitleInput").value="";
 document.getElementById("examDescriptionInput").value="";
+
 message("examTeacherMessage","تم نشر الامتحان بنجاح.",true);
 document.getElementById("loadTeacherExamsBtn").click();
 
@@ -670,8 +718,10 @@ return;
 
 result.forEach(item=>{
 const d=item.data();
-makeCard(box,d.title,d.description+" — عدد الأسئلة: "+(d.questions||[]).length);
+makeCard(box,d.title,
+(d.description||"")+" — عدد الأسئلة: "+(d.questions||[]).length);
 });
+
 }catch(error){
 console.error(error);
 box.textContent="تعذر تحميل الامتحانات.";
@@ -679,12 +729,17 @@ box.textContent="تعذر تحميل الامتحانات.";
 };
 
 // تحميل امتحانات الطالب
+// تم إصلاح الاستعلام ليجلب المنشور فقط
 async function loadStudentExams(user){
 const box=document.getElementById("studentExamsList");
 box.textContent="جاري تحميل الامتحانات...";
 
 try{
-const exams=await getDocs(collection(db,"exams"));
+// مهم: قواعد Firestore ليست فلاتر، لذلك نحدد المنشور في الاستعلام
+const exams=await getDocs(
+query(collection(db,"exams"),where("isPublished","==",true))
+);
+
 box.replaceChildren();
 
 if(exams.empty){
@@ -694,9 +749,8 @@ return;
 
 for(const item of exams.docs){
 const exam=item.data();
-if(exam.isPublished!==true)continue;
-
 const card=makeCard(box,exam.title,exam.description||"");
+
 const attemptId=user.uid+"_"+item.id;
 const attemptRef=doc(db,"examAttempts",attemptId);
 const attempt=await getDoc(attemptRef);
@@ -706,16 +760,20 @@ const a=attempt.data();
 
 if(a.status==="submitted"){
 const result=document.createElement("p");
+
 result.textContent=a.reviewed===true?
 "تم اعتماد درجتك: "+a.score+" من "+a.total:
 "تم تسليم الامتحان. في انتظار مراجعة الأستاذ.";
+
 card.appendChild(result);
+
 }else{
 const resume=document.createElement("button");
 resume.textContent="استكمال الامتحان";
 resume.onclick=()=>startExam(item.id,exam,user);
 card.appendChild(resume);
 }
+
 }else{
 const start=document.createElement("button");
 start.textContent="بدء الامتحان";
@@ -726,7 +784,7 @@ card.appendChild(start);
 
 }catch(error){
 console.error(error);
-box.textContent="تعذر تحميل الامتحانات.";
+box.textContent="تعذر تحميل الامتحانات. تحقق من قواعد Firestore.";
 }
 }
 
@@ -744,11 +802,14 @@ const existing=await getDoc(attemptRef);
 
 if(existing.exists()){
 const data=existing.data();
+
 if(data.status==="submitted"){
 message("examMessage","لقد سلمت هذا الامتحان بالفعل.");
 return;
 }
+
 activeAnswers=data.answers||{};
+
 }else{
 await setDoc(attemptRef,{
 studentId:user.uid,
@@ -762,7 +823,9 @@ updatedAt:serverTimestamp()
 
 document.getElementById("examArea").classList.remove("hidden");
 document.getElementById("activeExamTitle").textContent=exam.title;
+
 message("examMessage","تم حفظ إجاباتك تلقائياً أثناء الحل.",true);
+
 renderStudentQuestions();
 
 document.getElementById("examArea").scrollIntoView({behavior:"smooth"});
@@ -790,6 +853,7 @@ input.type="radio";
 input.name="answer_"+q.id;
 input.value=optionIndex;
 input.checked=Number(activeAnswers[q.id])===optionIndex;
+
 input.onchange=()=>saveStudentAnswer(q.id,optionIndex);
 
 label.append(input,document.createTextNode(option));
@@ -798,24 +862,28 @@ card.appendChild(label);
 });
 }
 
-// حفظ إجابة الطالب
+// حفظ إجابة الطالب مع ترتيب عمليات الحفظ
 async function saveStudentAnswer(questionId,answer){
-if(savingAnswer)return;
+if(!activeAttemptId)return;
 
 activeAnswers[questionId]=answer;
-savingAnswer=true;
 
-try{
-await updateDoc(doc(db,"examAttempts",activeAttemptId),{
-answers:activeAnswers,
+const attemptId=activeAttemptId;
+const answersSnapshot={...activeAnswers};
+
+answerSaveQueue=answerSaveQueue.then(()=>{
+return updateDoc(doc(db,"examAttempts",attemptId),{
+answers:answersSnapshot,
 updatedAt:serverTimestamp()
 });
+});
+
+try{
+await answerSaveQueue;
 message("examMessage","تم حفظ إجابتك.",true);
 }catch(error){
 console.error(error);
 message("examMessage","تعذر حفظ الإجابة. تحقق من الاتصال.");
-}finally{
-savingAnswer=false;
 }
 }
 
@@ -823,12 +891,15 @@ savingAnswer=false;
 document.getElementById("submitExamBtn").onclick=async()=>{
 if(!activeAttemptId)return;
 
-if(!confirm("هل أنت متأكد من تسليم الامتحان؟ لن تتمكن من تعديل إجاباتك بعد التسليم."))return;
+if(!confirm("هل أنت متأكد من تسليم الامتحان؟ لن تتمكن من تعديل إجاباتك بعد التسليم."))
+return;
 
 const btn=document.getElementById("submitExamBtn");
 btn.disabled=true;
 
 try{
+await answerSaveQueue;
+
 await updateDoc(doc(db,"examAttempts",activeAttemptId),{
 answers:activeAnswers,
 status:"submitted",
@@ -861,7 +932,9 @@ try{
 const attempts=await getDocs(collection(db,"examAttempts"));
 box.replaceChildren();
 
-const submitted=attempts.docs.filter(x=>x.data().status==="submitted");
+const submitted=attempts.docs.filter(
+x=>x.data().status==="submitted"
+);
 
 if(submitted.length===0){
 box.textContent="لا توجد محاولات مسلمة حتى الآن.";
@@ -870,7 +943,9 @@ return;
 
 for(const item of submitted){
 const a=item.data();
-const card=makeCard(box,"محاولة طالب", "رقم الطالب: "+a.studentId+" — الامتحان: "+a.examId);
+
+const card=makeCard(box,"محاولة طالب",
+"رقم الطالب: "+a.studentId+" — الامتحان: "+a.examId);
 
 const reviewBtn=document.createElement("button");
 reviewBtn.textContent="مراجعة وتصحيح";
@@ -909,6 +984,7 @@ const reviewBox=document.createElement("div");
 reviewBox.className="card";
 
 let score=0;
+
 questions.forEach((q,index)=>{
 const correct=Number(keys[q.id]);
 const chosen=answers[q.id]===undefined?null:Number(answers[q.id]);
@@ -921,11 +997,12 @@ p.textContent="السؤال "+(index+1)+": "+q.text;
 reviewBox.appendChild(p);
 
 const answer=document.createElement("p");
-answer.textContent="إجابة الطالب: "+(chosen===null?"لم يجب":q.options[chosen]);
+answer.textContent="إجابة الطالب: "+
+(chosen===null?"لم يجب":(q.options[chosen]??"إجابة غير صالحة"));
 reviewBox.appendChild(answer);
 
 const right=document.createElement("p");
-right.textContent="الإجابة الصحيحة: "+q.options[correct];
+right.textContent="الإجابة الصحيحة: "+(q.options[correct]??"غير متاحة");
 right.style.color="green";
 reviewBox.appendChild(right);
 
@@ -941,6 +1018,7 @@ reviewBox.appendChild(summary);
 
 const approve=document.createElement("button");
 approve.textContent="اعتماد الدرجة";
+
 approve.onclick=async()=>{
 try{
 await updateDoc(doc(db,"examAttempts",attemptId),{
@@ -949,8 +1027,10 @@ total:questions.length,
 reviewed:true,
 reviewedAt:serverTimestamp()
 });
+
 alert("تم اعتماد الدرجة.");
 document.getElementById("loadAttemptsBtn").click();
+
 }catch(error){
 console.error(error);
 alert("تعذر اعتماد الدرجة.");
