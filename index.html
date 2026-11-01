@@ -666,7 +666,6 @@ const btn=document.getElementById("publishExamBtn");
 btn.disabled=true;
 
 try{
-// ينشأ الامتحان غير منشور أولاً
 const examRef=await addDoc(collection(db,"exams"),{
 title,description,
 questions:publicQuestions,
@@ -674,13 +673,11 @@ isPublished:false,
 createdAt:serverTimestamp()
 });
 
-// حفظ نموذج الإجابة قبل إتاحة الامتحان للطلاب
 await setDoc(doc(db,"examAnswerKeys",examRef.id),{
 answers:answerKey,
 createdAt:serverTimestamp()
 });
 
-// نشر الامتحان بعد نجاح حفظ نموذج الإجابة
 await updateDoc(examRef,{isPublished:true});
 
 draftQuestions=[];
@@ -729,13 +726,11 @@ box.textContent="تعذر تحميل الامتحانات.";
 };
 
 // تحميل امتحانات الطالب
-// تم إصلاح الاستعلام ليجلب المنشور فقط
 async function loadStudentExams(user){
 const box=document.getElementById("studentExamsList");
 box.textContent="جاري تحميل الامتحانات...";
 
 try{
-// مهم: قواعد Firestore ليست فلاتر، لذلك نحدد المنشور في الاستعلام
 const exams=await getDocs(
 query(collection(db,"exams"),where("isPublished","==",true))
 );
@@ -862,7 +857,7 @@ card.appendChild(label);
 });
 }
 
-// حفظ إجابة الطالب مع ترتيب عمليات الحفظ
+// حفظ إجابة الطالب
 async function saveStudentAnswer(questionId,answer){
 if(!activeAttemptId)return;
 
@@ -921,7 +916,7 @@ btn.disabled=false;
 }
 };
 
-// عرض محاولات الطلاب للأستاذ
+// عرض محاولات الطلاب للأستاذ مع إظهار أسماء الطلاب
 document.getElementById("loadAttemptsBtn").onclick=async()=>{
 if(!isTeacher(auth.currentUser))return;
 
@@ -933,7 +928,7 @@ const attempts=await getDocs(collection(db,"examAttempts"));
 box.replaceChildren();
 
 const submitted=attempts.docs.filter(
-x=>x.data().status==="submitted"
+item=>item.data().status==="submitted"
 );
 
 if(submitted.length===0){
@@ -944,8 +939,35 @@ return;
 for(const item of submitted){
 const a=item.data();
 
-const card=makeCard(box,"محاولة طالب",
-"رقم الطالب: "+a.studentId+" — الامتحان: "+a.examId);
+let studentName="طالب غير معروف";
+let examTitle="امتحان غير معروف";
+
+try{
+const studentDoc=await getDoc(
+doc(db,"students",a.studentId)
+);
+
+if(studentDoc.exists()){
+studentName=studentDoc.data().name||studentName;
+}
+
+const examDoc=await getDoc(
+doc(db,"exams",a.examId)
+);
+
+if(examDoc.exists()){
+examTitle=examDoc.data().title||examTitle;
+}
+
+}catch(error){
+console.error("خطأ تحميل بيانات الطالب أو الامتحان:",error);
+}
+
+const card=makeCard(
+box,
+"الطالب: "+studentName,
+"الامتحان: "+examTitle
+);
 
 const reviewBtn=document.createElement("button");
 reviewBtn.textContent="مراجعة وتصحيح";
@@ -954,14 +976,15 @@ card.appendChild(reviewBtn);
 
 if(a.reviewed===true){
 const result=document.createElement("p");
-result.textContent="الدرجة المعتمدة: "+a.score+" من "+a.total;
+result.textContent=
+"الدرجة المعتمدة: "+a.score+" من "+a.total;
 card.appendChild(result);
 }
 }
 
 }catch(error){
 console.error(error);
-box.textContent="تعذر تحميل المحاولات.";
+box.textContent="تعذر تحميل محاولات الطلاب.";
 }
 };
 
@@ -1072,4 +1095,4 @@ document.getElementById("logoutTeacherBtn").onclick=()=>signOut(auth);
 
 </script>
 </body>
-  </html>
+</html>
