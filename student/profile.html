@@ -1,0 +1,193 @@
+<!DOCTYPE html><html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الملف الشخصي | منصة التفوق</title>
+<link rel="stylesheet" href="../css/style.css"><style>
+*{box-sizing:border-box}
+
+body{
+font-family:Arial,sans-serif;
+padding:20px;
+min-height:100vh;
+}
+
+.profile{
+max-width:600px;
+margin:40px auto;
+padding:25px;
+border-radius:22px;
+background:rgba(255,255,255,.15);
+border:1px solid rgba(255,255,255,.3);
+box-shadow:0 10px 30px #0002;
+}
+
+.header{
+text-align:center;
+margin-bottom:25px;
+}
+
+.avatar{
+width:90px;
+height:90px;
+margin:auto;
+border-radius:50%;
+background:#155eef;
+color:white;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:45px;
+}
+
+.info{
+padding:15px;
+margin:12px 0;
+border-radius:12px;
+background:rgba(255,255,255,.15);
+}
+
+.info span{
+display:block;
+font-size:13px;
+opacity:.8;
+margin-bottom:8px;
+}
+
+.info strong{
+font-size:17px;
+word-break:break-word;
+}
+
+.status{
+display:inline-block;
+padding:7px 15px;
+border-radius:20px;
+background:#198754;
+color:white;
+}
+
+.back{
+display:block;
+text-align:center;
+margin-top:25px;
+padding:13px;
+border-radius:12px;
+background:#155eef;
+color:white;
+text-decoration:none;
+}
+
+#loading{
+text-align:center;
+margin-top:80px;
+}
+
+#error{
+display:none;
+text-align:center;
+padding:15px;
+color:white;
+background:#b52d3a;
+border-radius:12px;
+}
+
+</style></head><body><div id="loading">جاري تحميل بياناتك...</div>
+<div id="error"></div><main class="profile" id="profile" hidden><div class="header">
+<div class="avatar">👤</div>
+<h2>الملف الشخصي</h2>
+<p>منصة التفوق للدراسات الاجتماعية</p>
+</div><div class="info">
+<span>اسم الطالب</span>
+<strong id="studentName">---</strong>
+</div><div class="info">
+<span>البريد الإلكتروني</span>
+<strong id="studentEmail">---</strong>
+</div><div class="info">
+<span>حالة الحساب</span>
+<strong id="studentStatus" class="status">---</strong>
+</div><div class="info">
+<span>تاريخ إنشاء الحساب</span>
+<strong id="createdAt">---</strong>
+</div><a href="dashboard.html" class="back">
+⬅ العودة إلى لوحة الطالب
+</a></main><script type="module">
+
+import {auth,db} from "../firebase-config.js";
+
+import {
+onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+import {
+doc,
+getDoc
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
+const loading=document.getElementById("loading");
+const profile=document.getElementById("profile");
+const errorBox=document.getElementById("error");
+
+onAuthStateChanged(auth,async(user)=>{
+
+if(!user){
+location.replace("../login.html");
+return;
+}
+
+try{
+
+const studentRef=doc(db,"students",user.uid);
+const studentSnap=await getDoc(studentRef);
+
+if(!studentSnap.exists()){
+throw new Error("بيانات الطالب غير موجودة.");
+}
+
+const data=studentSnap.data();
+
+if(data.status==="disabled"){
+alert("حسابك موقوف حالياً. تواصل مع الأستاذ.");
+location.replace("../login.html");
+return;
+}
+
+document.getElementById("studentName").textContent=
+data.name||user.displayName||"الطالب";
+
+document.getElementById("studentEmail").textContent=
+data.email||user.email||"غير متوفر";
+
+document.getElementById("studentStatus").textContent=
+data.status==="active"?"نشط":"غير معروف";
+
+if(data.createdAt && data.createdAt.toDate){
+
+document.getElementById("createdAt").textContent=
+data.createdAt.toDate().toLocaleDateString("ar-EG");
+
+}else{
+
+document.getElementById("createdAt").textContent=
+"غير متوفر";
+
+}
+
+loading.hidden=true;
+profile.hidden=false;
+
+}catch(error){
+
+console.error(error);
+
+loading.hidden=true;
+errorBox.style.display="block";
+errorBox.textContent=
+"حدث خطأ أثناء تحميل بيانات الحساب. حاول مرة أخرى.";
+
+}
+
+});
+
+</script></body>
+</html>
