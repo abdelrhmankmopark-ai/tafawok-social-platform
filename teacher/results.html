@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نتائج الامتحانات | منصة التفوق</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #0f172a;
+      color: white;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 25px;
+    }
+
+    h1 {
+      color: #38bdf8;
+      font-size: 24px;
+    }
+
+    button, a {
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 15px;
+      text-decoration: none;
+    }
+
+    .back {
+      background: #334155;
+      color: white;
+    }
+
+    .refresh {
+      background: #2563eb;
+      color: white;
+    }
+
+    .attempt-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 15px;
+    }
+
+    .attempt-card h3 {
+      color: #38bdf8;
+      margin-top: 0;
+    }
+
+    .info {
+      color: #cbd5e1;
+      line-height: 1.9;
+      font-size: 14px;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 7px 12px;
+      border-radius: 20px;
+      background: #14532d;
+      color: #86efac;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+
+    .grade-btn {
+      width: 100%;
+      background: #16a34a;
+      color: white;
+      margin-top: 12px;
+    }
+
+    .grade-btn:disabled {
+      background: #64748b;
+    }
+
+    .message {
+      text-align: center;
+      color: #facc15;
+      margin: 20px 0;
+      line-height: 1.8;
+    }
+
+    .empty {
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      color: #cbd5e1;
+    }
+
+    .result {
+      color: #86efac;
+      font-weight: bold;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <header>
+    <h1>📊 نتائج الامتحانات</h1>
+
+    <div>
+      <a class="back" href="dashboard.html">رجوع</a>
+      <button class="refresh" id="refreshBtn">تحديث</button>
+    </div>
+  </header>
+
+  <div id="message" class="message">
+    جارٍ تحميل النتائج...
+  </div>
+
+  <div id="attemptsList"></div>
+
+</div>
+
+<script type="module">
+
+import { auth, db } from "../firebase-config.js";
+
+import {
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+import {
+  collection,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
+
+const TEACHER_UID = "BjZsimAIgIUxSJDI8Z3K9huOO012";
+
+const message = document.getElementById("message");
+const attemptsList = document.getElementById("attemptsList");
+const refreshBtn = document.getElementById("refreshBtn");
+
+let currentUser = null;
+
+
+onAuthStateChanged(auth, async (user) => {
+
+  if (!user) {
+    location.href = "../login.html";
+    return;
+  }
+
+  if (user.uid !== TEACHER_UID) {
+    message.textContent = "ليس لديك صلاحية دخول هذه الصفحة.";
+    return;
+  }
+
+  currentUser = user;
+
+  await loadAttempts();
+
+});
+
+
+async function loadAttempts() {
+
+  message.textContent = "جارٍ تحميل المحاولات...";
+  attemptsList.innerHTML = "";
+
+  try {
+
+    const snapshot = await getDocs(
+      collection(db, "examAttempts")
+    );
+
+    const attempts = [];
+
+    snapshot.forEach((item) => {
+
+      const data = item.data();
+
+      if (data.status === "submitted") {
+        attempts.push({
+          id: item.id,
+          ...data
+        });
+      }
+
+    });
+
+    if (attempts.length === 0) {
+
+      message.textContent = "";
+
+      attemptsList.innerHTML = `
+        <div class="empty">
+          لا توجد امتحانات تم تسليمها حتى الآن.
+        </div>
+      `;
+
+      return;
+    }
+
+    message.textContent = "";
+
+    for (const attempt of attempts) {
+
+      await createAttemptCard(attempt);
+
+    }
+
+  } catch (error) {
+
+    console.error(error);
+
+    message.textContent =
+      "تعذر تحميل المحاولات: " + error.message;
+
+  }
+
+}
+
+
+async function createAttemptCard(attempt) {
+
+  const card = document.createElement("div");
+  card.className = "attempt-card";
+
+  const title = document.createElement("h3");
+  title.textContent = "محاولة امتحان";
+
+  const status = document.createElement("span");
+  status.className = "status";
+  status.textContent = "تم التسليم";
+
+  const info = document.createElement("div");
+  info.className = "info";
+
+  info.textContent =
+    "رقم الطالب: " + attempt.studentId +
+    " | رقم الامتحان: " + attempt.examId;
+
+  const button = document.createElement("button");
+  button.className = "grade-btn";
+  button.textContent = "تصحيح الامتحان";
+
+  const result = document.createElement("div");
+  result.className = "result";
+
+  try {
+
+    const examSnapshot = await getDoc(
+      doc(db, "exams", attempt.examId)
+    );
+
+    if (examSnapshot.exists()) {
+
+      title.textContent =
+        examSnapshot.data().title || "امتحان بدون عنوان";
+
+    }
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+
+  button.addEventListener("click", async () => {
+
+    button.disabled = true;
+    button.textContent = "جارٍ التصحيح...";
+
+    try {
+
+      const examSnapshot = await getDoc(
+        doc(db, "exams", attempt.examId)
+      );
+
+      if (!examSnapshot.exists()) {
+        throw new Error("الامتحان غير موجود.");
+      }
+
+      const exam = examSnapshot.data();
+
+      const keySnapshot = await getDoc(
+        doc(db, "examAnswerKeys", attempt.examId)
+      );
+
+      if (!keySnapshot.exists()) {
+        throw new Error("مفتاح الإجابات غير موجود.");
+      }
+
+      const questions = exam.questions;
+      const correctAnswers = keySnapshot.data().answers;
+      const studentAnswers = attempt.answers || {};
+
+      if (!Array.isArray(questions) || questions.length === 0) {
+        throw new Error("أسئلة الامتحان غير موجودة.");
+      }
+
+      let score = 0;
+
+      for (const question of questions) {
+
+        const correct = correctAnswers[question.id];
+        const studentAnswer = studentAnswers[question.id];
+
+        if (
+          Number.isInteger(correct) &&
+          Number.isInteger(Number(studentAnswer)) &&
+          Number(studentAnswer) === correct
+        ) {
+          score++;
+        }
+
+      }
+
+      const total = questions.length;
+
+      const gradeRef = doc(
+        db,
+        "grades",
+        attempt.studentId + "_" + attempt.examId
+      );
+
+      await setDoc(gradeRef, {
+
+        studentId: attempt.studentId,
+        examId: attempt.examId,
+        title: exam.title || "امتحان",
+        type: "امتحان إلكتروني",
+        score: score,
+        total: total,
+        createdAt: serverTimestamp()
+
+      });
+
+      result.textContent =
+        "الدرجة: " + score + " من " + total;
+
+      button.textContent = "تم التصحيح بنجاح";
+
+    } catch (error) {
+
+      console.error(error);
+
+      alert("حدث خطأ أثناء التصحيح: " + error.message);
+
+      button.disabled = false;
+      button.textContent = "إعادة التصحيح";
+
+    }
+
+  });
+
+  card.appendChild(title);
+  card.appendChild(status);
+  card.appendChild(info);
+  card.appendChild(button);
+  card.appendChild(result);
+
+  attemptsList.appendChild(card);
+
+}
+
+
+refreshBtn.addEventListener("click", loadAttempts);
+
+</script>
+
+</body>
+</html>
