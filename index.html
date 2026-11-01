@@ -1,417 +1,472 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>منصة التفوق في الدراسات الاجتماعية</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>منصة التفوق في الدراسات الاجتماعية</title>
 
-  <style>
-    * { box-sizing: border-box; font-family: Tahoma, Arial, sans-serif; }
-
-    body {
-      margin: 0;
-      background: #f1f5fb;
-      color: #183153;
-    }
-
-    header {
-      background: #1455a0;
-      color: white;
-      text-align: center;
-      padding: 24px 12px;
-    }
-
-    header h1 { margin: 5px; }
-
-    .container {
-      width: 92%;
-      max-width: 650px;
-      margin: 25px auto;
-      background: white;
-      padding: 22px;
-      border-radius: 16px;
-      box-shadow: 0 5px 20px #00000010;
-    }
-
-    input {
-      width: 100%;
-      padding: 13px;
-      margin: 8px 0;
-      border: 1px solid #ccd5e2;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-
-    button {
-      width: 100%;
-      padding: 13px;
-      margin-top: 10px;
-      border: 0;
-      border-radius: 8px;
-      background: #1455a0;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    button:disabled { opacity: .6; }
-
-    .secondary {
-      background: #e8f0fb;
-      color: #1455a0;
-    }
-
-    .hidden { display: none; }
-
-    .message {
-      text-align: center;
-      line-height: 1.7;
-      overflow-wrap: anywhere;
-    }
-
-    .card {
-      background: #f7f9fd;
-      border: 1px solid #e1e8f2;
-      border-radius: 12px;
-      padding: 15px;
-      margin: 12px 0;
-      overflow-wrap: anywhere;
-    }
-
-    .card h3 { color: #1455a0; margin-top: 0; }
-
-    .card a {
-      display: inline-block;
-      margin: 8px 5px;
-      color: #1455a0;
-    }
-
-    .section-title {
-      border-bottom: 2px solid #e1e8f2;
-      padding-bottom: 10px;
-      margin-top: 28px;
-    }
-
-    footer {
-      text-align: center;
-      padding: 20px;
-      color: #65758b;
-    }
-  </style>
+<style>
+*{box-sizing:border-box;font-family:Tahoma,Arial,sans-serif}
+body{margin:0;background:#f1f5fb;color:#183153}
+header{background:#1455a0;color:white;text-align:center;padding:24px 12px}
+.container{width:92%;max-width:750px;margin:22px auto;background:white;padding:22px;border-radius:16px;box-shadow:0 5px 20px #0001}
+input,textarea,select{width:100%;padding:13px;margin:8px 0;border:1px solid #ccd5e2;border-radius:8px;font-size:16px}
+textarea{min-height:90px;resize:vertical}
+button{width:100%;padding:13px;margin-top:10px;border:0;border-radius:8px;background:#1455a0;color:white;font-size:16px;cursor:pointer}
+button:disabled{opacity:.6}
+.secondary{background:#e8f0fb;color:#1455a0}
+.danger{background:#b42318}
+.hidden{display:none}
+.message{text-align:center;line-height:1.7;overflow-wrap:anywhere}
+.card{background:#f7f9fd;border:1px solid #e1e8f2;border-radius:12px;padding:15px;margin:12px 0;overflow-wrap:anywhere}
+.card h3{color:#1455a0;margin-top:0}
+.card a{display:inline-block;margin:8px;color:#1455a0}
+.section-title{border-bottom:2px solid #e1e8f2;padding-bottom:10px;margin-top:28px}
+footer{text-align:center;padding:20px;color:#65758b}
+.small{font-size:13px;color:#65758b}
+</style>
 </head>
 
 <body>
 
 <header>
-  <h1>🏆 منصة التفوق</h1>
-  <p>في الدراسات الاجتماعية</p>
-  <p>الصف الثاني الإعدادي - الترم الأول</p>
+<h1>🏆 منصة التفوق</h1>
+<p>في الدراسات الاجتماعية</p>
+<p>الصف الثاني الإعدادي - الترم الأول</p>
 </header>
 
 <div class="container" id="welcome">
-  <h2>أهلاً بك في منصة التفوق</h2>
-  <p class="message">منصتك التعليمية للتفوق في الدراسات الاجتماعية.</p>
-  <button onclick="showPage('login')">تسجيل الدخول</button>
-  <button class="secondary" onclick="showPage('register')">إنشاء حساب طالب</button>
+<h2>أهلاً بك في منصة التفوق</h2>
+<p class="message">منصتك التعليمية للتفوق في الدراسات الاجتماعية.</p>
+<button onclick="showPage('login')">تسجيل الدخول</button>
+<button class="secondary" onclick="showPage('register')">إنشاء حساب طالب</button>
 </div>
 
 <div class="container hidden" id="login">
-  <h2>تسجيل الدخول</h2>
-  <input id="loginEmail" type="email" placeholder="البريد الإلكتروني">
-  <input id="loginPassword" type="password" placeholder="كلمة المرور">
-  <button id="loginBtn">دخول</button>
-  <button class="secondary" onclick="showPage('forgot')">نسيت كلمة المرور؟</button>
-  <button class="secondary" onclick="showPage('welcome')">رجوع</button>
-  <p class="message" id="loginMessage"></p>
+<h2>تسجيل الدخول</h2>
+<input id="loginEmail" type="email" placeholder="البريد الإلكتروني">
+<input id="loginPassword" type="password" placeholder="كلمة المرور">
+<button id="loginBtn">دخول</button>
+<button class="secondary" onclick="showPage('forgot')">نسيت كلمة المرور؟</button>
+<button class="secondary" onclick="showPage('welcome')">رجوع</button>
+<p id="loginMessage" class="message"></p>
 </div>
 
 <div class="container hidden" id="register">
-  <h2>إنشاء حساب طالب</h2>
-  <input id="registerName" type="text" placeholder="الاسم بالكامل">
-  <input id="registerEmail" type="email" placeholder="البريد الإلكتروني">
-  <input id="registerPassword" type="password" placeholder="كلمة المرور">
-  <button id="registerBtn">إنشاء الحساب</button>
-  <button class="secondary" onclick="showPage('welcome')">رجوع</button>
-  <p class="message" id="registerMessage"></p>
+<h2>إنشاء حساب طالب</h2>
+<input id="registerName" placeholder="الاسم بالكامل">
+<input id="registerEmail" type="email" placeholder="البريد الإلكتروني">
+<input id="registerPassword" type="password" placeholder="كلمة المرور">
+<button id="registerBtn">إنشاء الحساب</button>
+<button class="secondary" onclick="showPage('welcome')">رجوع</button>
+<p id="registerMessage" class="message"></p>
 </div>
 
 <div class="container hidden" id="forgot">
-  <h2>استعادة كلمة المرور</h2>
-  <input id="forgotEmail" type="email" placeholder="البريد الإلكتروني">
-  <button id="forgotBtn">إرسال رابط الاستعادة</button>
-  <button class="secondary" onclick="showPage('login')">رجوع</button>
-  <p class="message" id="forgotMessage"></p>
+<h2>استعادة كلمة المرور</h2>
+<input id="forgotEmail" type="email" placeholder="البريد الإلكتروني">
+<button id="forgotBtn">إرسال رابط الاستعادة</button>
+<button class="secondary" onclick="showPage('login')">رجوع</button>
+<p id="forgotMessage" class="message"></p>
 </div>
 
+<!-- لوحة الطالب -->
 <div class="container hidden" id="student">
-  <h2 id="studentName">لوحة الطالب</h2>
-  <p class="message">مرحباً بك في منصة التفوق التعليمية.</p>
+<h2 id="studentName">لوحة الطالب</h2>
+<p class="message">مرحباً بك في منصة التفوق التعليمية.</p>
 
-  <h3 class="section-title">📚 الدروس</h3>
-  <div id="lessonsList">جاري تحميل الدروس...</div>
+<h3 class="section-title">📚 الدروس</h3>
+<div id="lessonsList">جاري التحميل...</div>
 
-  <h3 class="section-title">📢 الإعلانات</h3>
-  <div id="announcementsList">جاري تحميل الإعلانات...</div>
+<h3 class="section-title">📢 الإعلانات</h3>
+<div id="announcementsList">جاري التحميل...</div>
 
-  <h3 class="section-title">🏆 درجاتي</h3>
-  <div id="gradesList">جاري تحميل الدرجات...</div>
+<h3 class="section-title">🏆 درجاتي</h3>
+<div id="gradesList">جاري التحميل...</div>
 
-  <button class="secondary" id="refreshBtn">تحديث المحتوى</button>
-  <button id="logoutBtn">تسجيل الخروج</button>
+<button class="secondary" id="refreshBtn">تحديث المحتوى</button>
+<button id="logoutStudentBtn">تسجيل الخروج</button>
+</div>
+
+<!-- لوحة الأستاذ -->
+<div class="container hidden" id="teacher">
+<h2>👨‍🏫 لوحة تحكم الأستاذ محمد رمضان</h2>
+<p class="message">مرحباً بك في إدارة منصة التفوق.</p>
+
+<h3 class="section-title">➕ إضافة درس جديد</h3>
+<input id="lessonTitle" placeholder="عنوان الدرس">
+<input id="lessonUnit" placeholder="اسم الوحدة">
+<textarea id="lessonDescription" placeholder="وصف الدرس"></textarea>
+<input id="lessonVideo" type="url" placeholder="رابط الفيديو (https)">
+<input id="lessonPdf" type="url" placeholder="رابط ملف PDF (https)">
+<button id="addLessonBtn">نشر الدرس</button>
+<p id="lessonMessage" class="message"></p>
+
+<h3 class="section-title">📢 نشر إعلان</h3>
+<input id="announcementTitle" placeholder="عنوان الإعلان">
+<textarea id="announcementMessage" placeholder="نص الإعلان"></textarea>
+<button id="addAnnouncementBtn">نشر الإعلان</button>
+<p id="announcementStatus" class="message"></p>
+
+<h3 class="section-title">👨‍🎓 الطلاب</h3>
+<button class="secondary" id="loadStudentsBtn">عرض وتحديث الطلاب</button>
+<div id="studentsList">اضغط عرض وتحديث الطلاب.</div>
+
+<h3 class="section-title">🏆 تسجيل درجات طالب</h3>
+<input id="gradeStudentId" placeholder="UID الطالب">
+<input id="examGrade" type="number" min="0" placeholder="درجة الامتحانات">
+<input id="homeworkGrade" type="number" min="0" placeholder="درجة الواجبات">
+<button id="saveGradesBtn">حفظ الدرجات</button>
+<p id="gradeMessage" class="message"></p>
+
+<button id="logoutTeacherBtn" class="danger">تسجيل الخروج</button>
 </div>
 
 <footer>جميع الحقوق محفوظة © منصة التفوق</footer>
 
 <script type="module">
-
-import { auth, db } from "./firebase-config.js";
+import {auth,db} from "./firebase-config.js";
 
 import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail,
-  onAuthStateChanged,
-  signOut,
-  updateProfile
+createUserWithEmailAndPassword,
+signInWithEmailAndPassword,
+sendPasswordResetEmail,
+onAuthStateChanged,
+signOut,
+updateProfile
 } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
 
 import {
-  doc,
-  setDoc,
-  getDoc,
-  getDocs,
-  collection,
-  serverTimestamp
+doc,setDoc,getDoc,getDocs,addDoc,updateDoc,
+collection,serverTimestamp
 } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
-window.showPage = function(page) {
-  document.querySelectorAll(".container").forEach(element => {
-    element.classList.add("hidden");
-  });
-  document.getElementById(page).classList.remove("hidden");
+const TEACHER_UID = "BjZsimAIgIUxSJDI8Z3K9huOO012";
+
+window.showPage = function(page){
+document.querySelectorAll(".container").forEach(x=>x.classList.add("hidden"));
+document.getElementById(page).classList.remove("hidden");
 };
 
-function showMessage(id, message, success = false) {
-  const element = document.getElementById(id);
-  element.textContent = message;
-  element.style.color = success ? "green" : "red";
+function message(id,text,success=false){
+const el=document.getElementById(id);
+el.textContent=text;
+el.style.color=success?"green":"#b42318";
 }
 
-function addTextCard(container, title, description) {
-  const card = document.createElement("div");
-  card.className = "card";
-
-  const heading = document.createElement("h3");
-  heading.textContent = title || "بدون عنوان";
-
-  const paragraph = document.createElement("p");
-  paragraph.textContent = description || "";
-
-  card.append(heading, paragraph);
-  container.appendChild(card);
-
-  return card;
+function safeLink(card,label,value){
+if(!value)return;
+try{
+const url=new URL(value);
+if(url.protocol!=="https:")return;
+const a=document.createElement("a");
+a.href=url.href;
+a.target="_blank";
+a.rel="noopener noreferrer";
+a.textContent=label;
+card.appendChild(a);
+}catch{}
 }
 
-function addSafeLink(card, label, value) {
-  if (!value) return;
+function makeCard(parent,title,description){
+const card=document.createElement("div");
+card.className="card";
+const h=document.createElement("h3");
+h.textContent=title||"بدون عنوان";
+const p=document.createElement("p");
+p.textContent=description||"";
+card.append(h,p);
+parent.appendChild(card);
+return card;
+}
 
-  try {
-    const url = new URL(value);
-
-    if (url.protocol !== "https:") return;
-
-    const link = document.createElement("a");
-    link.href = url.href;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = label;
-
-    card.appendChild(link);
-  } catch {
-    // تجاهل الرابط غير الصحيح
-  }
+function isTeacher(user){
+return user && user.uid===TEACHER_UID;
 }
 
 // إنشاء حساب طالب
-document.getElementById("registerBtn").addEventListener("click", async () => {
-  const name = document.getElementById("registerName").value.trim();
-  const email = document.getElementById("registerEmail").value.trim();
-  const password = document.getElementById("registerPassword").value;
+document.getElementById("registerBtn").onclick=async()=>{
+const name=document.getElementById("registerName").value.trim();
+const email=document.getElementById("registerEmail").value.trim();
+const password=document.getElementById("registerPassword").value;
 
-  if (!name || !email || !password) {
-    return showMessage("registerMessage", "من فضلك املأ جميع البيانات.");
-  }
+if(!name||!email||!password)
+return message("registerMessage","املأ جميع البيانات.");
 
-  if (password.length < 6) {
-    return showMessage("registerMessage", "كلمة المرور يجب أن تكون 6 أحرف على الأقل.");
-  }
+if(password.length<6)
+return message("registerMessage","كلمة المرور يجب أن تكون 6 أحرف على الأقل.");
 
-  const button = document.getElementById("registerBtn");
-  button.disabled = true;
-  button.textContent = "جاري إنشاء الحساب...";
+const btn=document.getElementById("registerBtn");
+btn.disabled=true;
 
-  try {
-    const result = await createUserWithEmailAndPassword(auth, email, password);
+try{
+const result=await createUserWithEmailAndPassword(auth,email,password);
+await updateProfile(result.user,{displayName:name});
 
-    await updateProfile(result.user, { displayName: name });
-
-    await setDoc(doc(db, "students", result.user.uid), {
-      name,
-      email,
-      createdAt: serverTimestamp(),
-      status: "active"
-    });
-
-    showMessage("registerMessage", "تم إنشاء الحساب بنجاح!", true);
-
-  } catch (error) {
-    const errors = {
-      "auth/email-already-in-use": "هذا البريد مسجل بالفعل.",
-      "auth/invalid-email": "البريد الإلكتروني غير صحيح.",
-      "auth/weak-password": "كلمة المرور ضعيفة.",
-      "permission-denied": "تعذر حفظ بيانات الحساب. تواصل مع المدرس."
-    };
-
-    showMessage("registerMessage", errors[error.code] || "حدث خطأ أثناء التسجيل.");
-
-  } finally {
-    button.disabled = false;
-    button.textContent = "إنشاء الحساب";
-  }
+await setDoc(doc(db,"students",result.user.uid),{
+name,email,createdAt:serverTimestamp(),status:"active"
 });
+
+message("registerMessage","تم إنشاء الحساب بنجاح.",true);
+}catch(error){
+console.error(error);
+message("registerMessage","تعذر إنشاء الحساب: "+error.message);
+}finally{
+btn.disabled=false;
+}
+};
 
 // تسجيل الدخول
-document.getElementById("loginBtn").addEventListener("click", async () => {
-  const email = document.getElementById("loginEmail").value.trim();
-  const password = document.getElementById("loginPassword").value;
+document.getElementById("loginBtn").onclick=async()=>{
+const email=document.getElementById("loginEmail").value.trim();
+const password=document.getElementById("loginPassword").value;
+if(!email||!password)return message("loginMessage","اكتب البريد وكلمة المرور.");
 
-  if (!email || !password) {
-    return showMessage("loginMessage", "اكتب البريد وكلمة المرور.");
-  }
-
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-  } catch {
-    showMessage("loginMessage", "تعذر تسجيل الدخول. راجع بياناتك.");
-  }
-});
+try{
+await signInWithEmailAndPassword(auth,email,password);
+}catch(error){
+console.error(error);
+message("loginMessage","تعذر تسجيل الدخول. راجع بياناتك.");
+}
+};
 
 // استعادة كلمة المرور
-document.getElementById("forgotBtn").addEventListener("click", async () => {
-  const email = document.getElementById("forgotEmail").value.trim();
+document.getElementById("forgotBtn").onclick=async()=>{
+const email=document.getElementById("forgotEmail").value.trim();
+if(!email)return message("forgotMessage","اكتب البريد الإلكتروني.");
+try{
+await sendPasswordResetEmail(auth,email);
+message("forgotMessage","إذا كان البريد مسجلاً، ستصلك رسالة الاستعادة.",true);
+}catch(error){
+message("forgotMessage","تعذر إرسال رسالة الاستعادة.");
+}
+};
 
-  if (!email) {
-    return showMessage("forgotMessage", "اكتب بريدك الإلكتروني.");
-  }
+// تحميل محتوى الطالب
+async function loadStudent(user){
+const lessonsBox=document.getElementById("lessonsList");
+const announcementsBox=document.getElementById("announcementsList");
+const gradesBox=document.getElementById("gradesList");
 
-  try {
-    await sendPasswordResetEmail(auth, email);
-    showMessage("forgotMessage", "إذا كان البريد مسجلاً، ستصلك رسالة الاستعادة.", true);
-  } catch {
-    showMessage("forgotMessage", "تعذر إرسال الرسالة. حاول مرة أخرى.");
-  }
-});
+lessonsBox.textContent="جاري تحميل الدروس...";
+announcementsBox.textContent="جاري تحميل الإعلانات...";
+gradesBox.textContent="جاري تحميل الدرجات...";
 
-// تحميل بيانات لوحة الطالب
-async function loadStudentData(user) {
-  const lessonsList = document.getElementById("lessonsList");
-  const announcementsList = document.getElementById("announcementsList");
-  const gradesList = document.getElementById("gradesList");
+try{
+const profile=await getDoc(doc(db,"students",user.uid));
 
-  lessonsList.textContent = "جاري تحميل الدروس...";
-  announcementsList.textContent = "جاري تحميل الإعلانات...";
-  gradesList.textContent = "جاري تحميل الدرجات...";
-
-  try {
-    const profile = await getDoc(doc(db, "students", user.uid));
-
-    if (!profile.exists()) {
-      document.getElementById("studentName").textContent =
-        "مرحباً " + (user.displayName || "بالطالب");
-    } else {
-      document.getElementById("studentName").textContent =
-        "مرحباً " + (profile.data().name || user.displayName || "بالطالب");
-    }
-
-    // الدروس
-    const lessons = await getDocs(collection(db, "lessons"));
-    lessonsList.replaceChildren();
-
-    if (lessons.empty) {
-      lessonsList.textContent = "لا توجد دروس منشورة حتى الآن.";
-    } else {
-      lessons.forEach(item => {
-        const data = item.data();
-        const card = addTextCard(lessonsList, data.title, data.description);
-
-        if (data.unit) {
-          const unit = document.createElement("p");
-          unit.textContent = "الوحدة: " + data.unit;
-          card.appendChild(unit);
-        }
-
-        addSafeLink(card, "مشاهدة الفيديو", data.videoUrl);
-        addSafeLink(card, "فتح ملف PDF", data.pdfUrl);
-      });
-    }
-
-    // الإعلانات
-    const announcements = await getDocs(collection(db, "announcements"));
-    announcementsList.replaceChildren();
-
-    if (announcements.empty) {
-      announcementsList.textContent = "لا توجد إعلانات حاليًا.";
-    } else {
-      announcements.forEach(item => {
-        const data = item.data();
-        addTextCard(announcementsList, data.title, data.message);
-      });
-    }
-
-    // درجات الطالب فقط
-    const grades = await getDoc(doc(db, "grades", user.uid));
-    gradesList.replaceChildren();
-
-    if (grades.exists()) {
-      const data = grades.data();
-      addTextCard(
-        gradesList,
-        "درجاتك",
-        "درجة الامتحانات: " + (data.examGrade ?? "لم تُحدد") +
-        " — درجة الواجبات: " + (data.homeworkGrade ?? "لم تُحدد")
-      );
-    } else {
-      gradesList.textContent = "لم تُسجل درجات لك حتى الآن.";
-    }
-
-  } catch (error) {
-    lessonsList.textContent = "تعذر تحميل المحتوى. راجع اتصال قاعدة البيانات وصلاحياتها.";
-    announcementsList.textContent = "تعذر تحميل الإعلانات.";
-    gradesList.textContent = "تعذر تحميل الدرجات.";
-    console.error(error);
-  }
+if(profile.exists() && profile.data().status==="suspended"){
+alert("هذا الحساب موقوف. تواصل مع المدرس.");
+await signOut(auth);
+return;
 }
 
-// متابعة تسجيل الدخول
-onAuthStateChanged(auth, user => {
-  if (user) {
-    showPage("student");
-    loadStudentData(user);
-  } else {
-    showPage("welcome");
-  }
+document.getElementById("studentName").textContent=
+"مرحباً "+(profile.exists()?profile.data().name:user.displayName||"بالطالب");
+
+const lessons=await getDocs(collection(db,"lessons"));
+lessonsBox.replaceChildren();
+
+if(lessons.empty)lessonsBox.textContent="لا توجد دروس منشورة حتى الآن.";
+lessons.forEach(item=>{
+const d=item.data();
+const card=makeCard(lessonsBox,d.title,d.description);
+if(d.unit){
+const p=document.createElement("p");
+p.textContent="الوحدة: "+d.unit;
+card.appendChild(p);
+}
+safeLink(card,"مشاهدة الفيديو",d.videoUrl);
+safeLink(card,"فتح ملف PDF",d.pdfUrl);
 });
 
-document.getElementById("refreshBtn").addEventListener("click", () => {
-  if (auth.currentUser) loadStudentData(auth.currentUser);
+const announcements=await getDocs(collection(db,"announcements"));
+announcementsBox.replaceChildren();
+if(announcements.empty)announcementsBox.textContent="لا توجد إعلانات حالياً.";
+announcements.forEach(item=>{
+const d=item.data();
+makeCard(announcementsBox,d.title,d.message);
 });
 
-document.getElementById("logoutBtn").addEventListener("click", async () => {
-  await signOut(auth);
+const grades=await getDoc(doc(db,"grades",user.uid));
+gradesBox.replaceChildren();
+
+if(grades.exists()){
+const d=grades.data();
+makeCard(gradesBox,"درجاتك",
+"الامتحانات: "+(d.examGrade??"لم تحدد")+
+" — الواجبات: "+(d.homeworkGrade??"لم تحدد"));
+}else{
+gradesBox.textContent="لم تُسجل درجات لك حتى الآن.";
+}
+}catch(error){
+console.error(error);
+lessonsBox.textContent="تعذر تحميل الدروس.";
+announcementsBox.textContent="تعذر تحميل الإعلانات.";
+gradesBox.textContent="تعذر تحميل الدرجات.";
+}
+}
+
+// إضافة درس
+document.getElementById("addLessonBtn").onclick=async()=>{
+if(!isTeacher(auth.currentUser))return message("lessonMessage","غير مصرح لك.");
+
+const title=document.getElementById("lessonTitle").value.trim();
+const unit=document.getElementById("lessonUnit").value.trim();
+const description=document.getElementById("lessonDescription").value.trim();
+const videoUrl=document.getElementById("lessonVideo").value.trim();
+const pdfUrl=document.getElementById("lessonPdf").value.trim();
+
+if(!title)return message("lessonMessage","اكتب عنوان الدرس.");
+
+try{
+await addDoc(collection(db,"lessons"),{
+title,unit,description,videoUrl,pdfUrl,
+createdAt:serverTimestamp()
 });
+message("lessonMessage","تم نشر الدرس بنجاح.",true);
+["lessonTitle","lessonUnit","lessonDescription","lessonVideo","lessonPdf"]
+.forEach(id=>document.getElementById(id).value="");
+}catch(error){
+console.error(error);
+message("lessonMessage","فشل نشر الدرس: "+error.message);
+}
+};
+
+// نشر إعلان
+document.getElementById("addAnnouncementBtn").onclick=async()=>{
+if(!isTeacher(auth.currentUser))return message("announcementStatus","غير مصرح لك.");
+
+const title=document.getElementById("announcementTitle").value.trim();
+const text=document.getElementById("announcementMessage").value.trim();
+
+if(!title||!text)return message("announcementStatus","اكتب العنوان ونص الإعلان.");
+
+try{
+await addDoc(collection(db,"announcements"),{
+title,message:text,createdAt:serverTimestamp()
+});
+message("announcementStatus","تم نشر الإعلان.",true);
+document.getElementById("announcementTitle").value="";
+document.getElementById("announcementMessage").value="";
+}catch(error){
+console.error(error);
+message("announcementStatus","تعذر نشر الإعلان: "+error.message);
+}
+};
+
+// عرض الطلاب للأستاذ
+document.getElementById("loadStudentsBtn").onclick=async()=>{
+const box=document.getElementById("studentsList");
+if(!isTeacher(auth.currentUser))return;
+box.textContent="جاري تحميل الطلاب...";
+
+try{
+const result=await getDocs(collection(db,"students"));
+box.replaceChildren();
+
+if(result.empty){
+box.textContent="لا يوجد طلاب مسجلون.";
+return;
+}
+
+result.forEach(item=>{
+const d=item.data();
+const card=makeCard(box,d.name||"طالب",d.email||"");
+const id=document.createElement("p");
+id.className="small";
+id.textContent="UID: "+item.id;
+card.appendChild(id);
+
+const status=document.createElement("p");
+status.textContent="الحالة: "+(d.status||"غير محددة");
+card.appendChild(status);
+
+const btn=document.createElement("button");
+btn.className="secondary";
+btn.textContent=d.status==="suspended"?"إعادة تفعيل الحساب":"إيقاف الحساب";
+btn.onclick=async()=>{
+try{
+await updateDoc(doc(db,"students",item.id),{
+status:d.status==="suspended"?"active":"suspended"
+});
+message("gradeMessage","تم تحديث حالة الطالب.",true);
+document.getElementById("loadStudentsBtn").click();
+}catch(error){
+message("gradeMessage","تعذر تحديث حالة الطالب.");
+}
+};
+card.appendChild(btn);
+
+const gradeBtn=document.createElement("button");
+gradeBtn.className="secondary";
+gradeBtn.textContent="اختيار هذا الطالب للدرجات";
+gradeBtn.onclick=()=>{
+document.getElementById("gradeStudentId").value=item.id;
+};
+card.appendChild(gradeBtn);
+});
+}catch(error){
+console.error(error);
+box.textContent="تعذر تحميل الطلاب.";
+}
+};
+
+// حفظ درجات الطالب
+document.getElementById("saveGradesBtn").onclick=async()=>{
+if(!isTeacher(auth.currentUser))return message("gradeMessage","غير مصرح لك.");
+
+const uid=document.getElementById("gradeStudentId").value.trim();
+const exam=document.getElementById("examGrade").value;
+const homework=document.getElementById("homeworkGrade").value;
+
+if(!uid)return message("gradeMessage","اكتب UID الطالب أو اختره من القائمة.");
+if(exam===""||homework==="")return message("gradeMessage","اكتب الدرجتين.");
+
+const examNumber=Number(exam);
+const homeworkNumber=Number(homework);
+
+if(!Number.isFinite(examNumber)||!Number.isFinite(homeworkNumber)||
+examNumber<0||homeworkNumber<0)
+return message("gradeMessage","اكتب درجات صحيحة غير سالبة.");
+
+try{
+await setDoc(doc(db,"grades",uid),{
+examGrade:examNumber,
+homeworkGrade:homeworkNumber,
+updatedAt:serverTimestamp()
+});
+message("gradeMessage","تم حفظ الدرجات بنجاح.",true);
+}catch(error){
+console.error(error);
+message("gradeMessage","تعذر حفظ الدرجات: "+error.message);
+}
+};
+
+// متابعة حالة الدخول
+onAuthStateChanged(auth,async user=>{
+if(!user){
+showPage("welcome");
+return;
+}
+
+if(isTeacher(user)){
+showPage("teacher");
+return;
+}
+
+showPage("student");
+await loadStudent(user);
+});
+
+document.getElementById("refreshBtn").onclick=()=>{
+if(auth.currentUser&&!isTeacher(auth.currentUser))
+loadStudent(auth.currentUser);
+};
+
+document.getElementById("logoutStudentBtn").onclick=()=>signOut(auth);
+document.getElementById("logoutTeacherBtn").onclick=()=>signOut(auth);
 
 </script>
-
 </body>
 </html>
