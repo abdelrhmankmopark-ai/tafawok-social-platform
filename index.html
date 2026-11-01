@@ -16,7 +16,7 @@ button{width:100%;padding:13px;margin-top:10px;border:0;border-radius:8px;backgr
 button:disabled{opacity:.6}
 .secondary{background:#e8f0fb;color:#1455a0}
 .danger{background:#b42318}
-.hidden{display:none}
+.hidden{display:none!important}
 .message{text-align:center;line-height:1.7;overflow-wrap:anywhere}
 .card{background:#f7f9fd;border:1px solid #e1e8f2;border-radius:12px;padding:15px;margin:12px 0;overflow-wrap:anywhere}
 .card h3{color:#1455a0;margin-top:0}
@@ -24,6 +24,8 @@ button:disabled{opacity:.6}
 .section-title{border-bottom:2px solid #e1e8f2;padding-bottom:10px;margin-top:28px}
 footer{text-align:center;padding:20px;color:#65758b}
 .small{font-size:13px;color:#65758b}
+.option{display:block;padding:10px;margin:7px 0;background:#fff;border:1px solid #dce4ef;border-radius:8px}
+.option input{width:auto;margin-left:8px}
 </style>
 </head>
 
@@ -84,6 +86,17 @@ footer{text-align:center;padding:20px;color:#65758b}
 <h3 class="section-title">🏆 درجاتي</h3>
 <div id="gradesList">جاري التحميل...</div>
 
+<h3 class="section-title">📝 الامتحانات</h3>
+<div id="studentExamsList">جاري تحميل الامتحانات...</div>
+
+<div id="examArea" class="hidden">
+<h3 id="activeExamTitle"></h3>
+<p id="examProgress" class="small"></p>
+<div id="examQuestions"></div>
+<button id="submitExamBtn">تسليم الامتحان</button>
+<p id="examMessage" class="message"></p>
+</div>
+
 <button class="secondary" id="refreshBtn">تحديث المحتوى</button>
 <button id="logoutStudentBtn">تسجيل الخروج</button>
 </div>
@@ -107,6 +120,48 @@ footer{text-align:center;padding:20px;color:#65758b}
 <textarea id="announcementMessage" placeholder="نص الإعلان"></textarea>
 <button id="addAnnouncementBtn">نشر الإعلان</button>
 <p id="announcementStatus" class="message"></p>
+
+<h3 class="section-title">📝 إنشاء امتحان</h3>
+<input id="examTitleInput" placeholder="عنوان الامتحان">
+<textarea id="examDescriptionInput" placeholder="وصف الامتحان"></textarea>
+
+<hr>
+<h4>إضافة سؤال</h4>
+<textarea id="questionTextInput" placeholder="اكتب السؤال"></textarea>
+
+<select id="questionTypeInput">
+<option value="mcq">اختيار من متعدد</option>
+<option value="truefalse">صح أو خطأ</option>
+</select>
+
+<div id="mcqOptionsBox">
+<input id="option1Input" placeholder="الاختيار الأول">
+<input id="option2Input" placeholder="الاختيار الثاني">
+<input id="option3Input" placeholder="الاختيار الثالث">
+<input id="option4Input" placeholder="الاختيار الرابع">
+</div>
+
+<select id="correctAnswerInput">
+<option value="0">الإجابة الصحيحة: الأول / صح</option>
+<option value="1">الإجابة الصحيحة: الثاني / خطأ</option>
+<option value="2">الإجابة الصحيحة: الثالث</option>
+<option value="3">الإجابة الصحيحة: الرابع</option>
+</select>
+
+<button class="secondary" id="addQuestionBtn">إضافة السؤال إلى الامتحان</button>
+<p id="questionCount" class="message">عدد الأسئلة: 0</p>
+<div id="teacherQuestionsPreview"></div>
+
+<button id="publishExamBtn">نشر الامتحان</button>
+<p id="examTeacherMessage" class="message"></p>
+
+<h3 class="section-title">📋 الامتحانات المنشورة</h3>
+<button class="secondary" id="loadTeacherExamsBtn">تحديث الامتحانات</button>
+<div id="teacherExamsList"></div>
+
+<h3 class="section-title">📝 محاولات الطلاب</h3>
+<button class="secondary" id="loadAttemptsBtn">عرض محاولات الطلاب</button>
+<div id="teacherAttemptsList"></div>
 
 <h3 class="section-title">👨‍🎓 الطلاب</h3>
 <button class="secondary" id="loadStudentsBtn">عرض وتحديث الطلاب</button>
@@ -138,10 +193,17 @@ updateProfile
 
 import {
 doc,setDoc,getDoc,getDocs,addDoc,updateDoc,
-collection,serverTimestamp
+collection,serverTimestamp,query,where
 } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
 const TEACHER_UID = "BjZsimAIgIUxSJDI8Z3K9huOO012";
+
+let draftQuestions = [];
+let activeExamId = null;
+let activeAttemptId = null;
+let activeExamQuestions = [];
+let activeAnswers = {};
+let savingAnswer = false;
 
 window.showPage = function(page){
 document.querySelectorAll(".container").forEach(x=>x.classList.add("hidden"));
@@ -150,6 +212,7 @@ document.getElementById(page).classList.remove("hidden");
 
 function message(id,text,success=false){
 const el=document.getElementById(id);
+if(!el)return;
 el.textContent=text;
 el.style.color=success?"green":"#b42318";
 }
@@ -299,6 +362,9 @@ makeCard(gradesBox,"درجاتك",
 }else{
 gradesBox.textContent="لم تُسجل درجات لك حتى الآن.";
 }
+
+await loadStudentExams(user);
+
 }catch(error){
 console.error(error);
 lessonsBox.textContent="تعذر تحميل الدروس.";
@@ -443,6 +509,463 @@ message("gradeMessage","تعذر حفظ الدرجات: "+error.message);
 }
 };
 
+// تغيير نوع السؤال
+document.getElementById("questionTypeInput").onchange=()=>{
+const type=document.getElementById("questionTypeInput").value;
+const box=document.getElementById("mcqOptionsBox");
+const correct=document.getElementById("correctAnswerInput");
+
+if(type==="truefalse"){
+box.classList.add("hidden");
+correct.innerHTML=`
+<option value="0">صح</option>
+<option value="1">خطأ</option>`;
+}else{
+box.classList.remove("hidden");
+correct.innerHTML=`
+<option value="0">الإجابة الصحيحة: الأول</option>
+<option value="1">الإجابة الصحيحة: الثاني</option>
+<option value="2">الإجابة الصحيحة: الثالث</option>
+<option value="3">الإجابة الصحيحة: الرابع</option>`;
+}
+};
+
+// إضافة سؤال للمسودة
+document.getElementById("addQuestionBtn").onclick=()=>{
+if(!isTeacher(auth.currentUser))return;
+
+const text=document.getElementById("questionTextInput").value.trim();
+const type=document.getElementById("questionTypeInput").value;
+const correct=Number(document.getElementById("correctAnswerInput").value);
+
+if(!text)return message("examTeacherMessage","اكتب نص السؤال.");
+
+let options=[];
+
+if(type==="mcq"){
+options=[
+document.getElementById("option1Input").value.trim(),
+document.getElementById("option2Input").value.trim(),
+document.getElementById("option3Input").value.trim(),
+document.getElementById("option4Input").value.trim()
+];
+
+if(options.some(x=>!x))
+return message("examTeacherMessage","اكتب الاختيارات الأربعة.");
+
+}else{
+options=["صح","خطأ"];
+}
+
+if(correct<0||correct>=options.length)
+return message("examTeacherMessage","حدد إجابة صحيحة.");
+
+draftQuestions.push({
+id:"q"+Date.now()+"_"+draftQuestions.length,
+text,type,options
+});
+
+draftQuestions[draftQuestions.length-1].correctAnswer=correct;
+
+document.getElementById("questionTextInput").value="";
+["option1Input","option2Input","option3Input","option4Input"]
+.forEach(id=>document.getElementById(id).value="");
+
+renderDraftQuestions();
+message("examTeacherMessage","تمت إضافة السؤال.",true);
+};
+
+function renderDraftQuestions(){
+const box=document.getElementById("teacherQuestionsPreview");
+box.replaceChildren();
+
+draftQuestions.forEach((q,index)=>{
+const card=makeCard(box,"السؤال "+(index+1),q.text);
+const p=document.createElement("p");
+p.textContent="نوع السؤال: "+(q.type==="mcq"?"اختيار من متعدد":"صح أو خطأ");
+card.appendChild(p);
+
+const btn=document.createElement("button");
+btn.className="danger";
+btn.textContent="حذف السؤال";
+btn.onclick=()=>{
+draftQuestions.splice(index,1);
+renderDraftQuestions();
+};
+card.appendChild(btn);
+});
+
+document.getElementById("questionCount").textContent=
+"عدد الأسئلة: "+draftQuestions.length;
+}
+
+// نشر امتحان
+document.getElementById("publishExamBtn").onclick=async()=>{
+if(!isTeacher(auth.currentUser))return message("examTeacherMessage","غير مصرح لك.");
+
+const title=document.getElementById("examTitleInput").value.trim();
+const description=document.getElementById("examDescriptionInput").value.trim();
+
+if(!title)return message("examTeacherMessage","اكتب عنوان الامتحان.");
+if(draftQuestions.length===0)return message("examTeacherMessage","أضف سؤالاً واحداً على الأقل.");
+
+const publicQuestions=draftQuestions.map(q=>({
+id:q.id,
+text:q.text,
+type:q.type,
+options:q.options
+}));
+
+const answerKey={};
+draftQuestions.forEach(q=>{
+answerKey[q.id]=q.correctAnswer;
+});
+
+const btn=document.getElementById("publishExamBtn");
+btn.disabled=true;
+
+try{
+const examRef=await addDoc(collection(db,"exams"),{
+title,description,
+questions:publicQuestions,
+isPublished:true,
+createdAt:serverTimestamp()
+});
+
+await setDoc(doc(db,"examAnswerKeys",examRef.id),{
+answers:answerKey,
+createdAt:serverTimestamp()
+});
+
+draftQuestions=[];
+renderDraftQuestions();
+document.getElementById("examTitleInput").value="";
+document.getElementById("examDescriptionInput").value="";
+message("examTeacherMessage","تم نشر الامتحان بنجاح.",true);
+document.getElementById("loadTeacherExamsBtn").click();
+
+}catch(error){
+console.error(error);
+message("examTeacherMessage","حدث خطأ أثناء النشر: "+error.message);
+}finally{
+btn.disabled=false;
+}
+};
+
+// عرض امتحانات الأستاذ
+document.getElementById("loadTeacherExamsBtn").onclick=async()=>{
+if(!isTeacher(auth.currentUser))return;
+
+const box=document.getElementById("teacherExamsList");
+box.textContent="جاري تحميل الامتحانات...";
+
+try{
+const result=await getDocs(collection(db,"exams"));
+box.replaceChildren();
+
+if(result.empty){
+box.textContent="لا توجد امتحانات.";
+return;
+}
+
+result.forEach(item=>{
+const d=item.data();
+makeCard(box,d.title,d.description+" — عدد الأسئلة: "+(d.questions||[]).length);
+});
+}catch(error){
+console.error(error);
+box.textContent="تعذر تحميل الامتحانات.";
+}
+};
+
+// تحميل امتحانات الطالب
+async function loadStudentExams(user){
+const box=document.getElementById("studentExamsList");
+box.textContent="جاري تحميل الامتحانات...";
+
+try{
+const exams=await getDocs(collection(db,"exams"));
+box.replaceChildren();
+
+if(exams.empty){
+box.textContent="لا توجد امتحانات حالياً.";
+return;
+}
+
+for(const item of exams.docs){
+const exam=item.data();
+if(exam.isPublished!==true)continue;
+
+const card=makeCard(box,exam.title,exam.description||"");
+const attemptId=user.uid+"_"+item.id;
+const attemptRef=doc(db,"examAttempts",attemptId);
+const attempt=await getDoc(attemptRef);
+
+if(attempt.exists()){
+const a=attempt.data();
+
+if(a.status==="submitted"){
+const result=document.createElement("p");
+result.textContent=a.reviewed===true?
+"تم اعتماد درجتك: "+a.score+" من "+a.total:
+"تم تسليم الامتحان. في انتظار مراجعة الأستاذ.";
+card.appendChild(result);
+}else{
+const resume=document.createElement("button");
+resume.textContent="استكمال الامتحان";
+resume.onclick=()=>startExam(item.id,exam,user);
+card.appendChild(resume);
+}
+}else{
+const start=document.createElement("button");
+start.textContent="بدء الامتحان";
+start.onclick=()=>startExam(item.id,exam,user);
+card.appendChild(start);
+}
+}
+
+}catch(error){
+console.error(error);
+box.textContent="تعذر تحميل الامتحانات.";
+}
+}
+
+// بدء أو استكمال الامتحان
+async function startExam(examId,exam,user){
+activeExamId=examId;
+activeAttemptId=user.uid+"_"+examId;
+activeExamQuestions=exam.questions||[];
+activeAnswers={};
+
+const attemptRef=doc(db,"examAttempts",activeAttemptId);
+
+try{
+const existing=await getDoc(attemptRef);
+
+if(existing.exists()){
+const data=existing.data();
+if(data.status==="submitted"){
+message("examMessage","لقد سلمت هذا الامتحان بالفعل.");
+return;
+}
+activeAnswers=data.answers||{};
+}else{
+await setDoc(attemptRef,{
+studentId:user.uid,
+examId,
+answers:{},
+status:"inProgress",
+startedAt:serverTimestamp(),
+updatedAt:serverTimestamp()
+});
+}
+
+document.getElementById("examArea").classList.remove("hidden");
+document.getElementById("activeExamTitle").textContent=exam.title;
+message("examMessage","تم حفظ إجاباتك تلقائياً أثناء الحل.",true);
+renderStudentQuestions();
+
+document.getElementById("examArea").scrollIntoView({behavior:"smooth"});
+
+}catch(error){
+console.error(error);
+alert("تعذر بدء الامتحان: "+error.message);
+}
+}
+
+// عرض أسئلة الطالب
+function renderStudentQuestions(){
+const box=document.getElementById("examQuestions");
+box.replaceChildren();
+
+activeExamQuestions.forEach((q,index)=>{
+const card=makeCard(box,"السؤال "+(index+1),q.text);
+
+q.options.forEach((option,optionIndex)=>{
+const label=document.createElement("label");
+label.className="option";
+
+const input=document.createElement("input");
+input.type="radio";
+input.name="answer_"+q.id;
+input.value=optionIndex;
+input.checked=Number(activeAnswers[q.id])===optionIndex;
+input.onchange=()=>saveStudentAnswer(q.id,optionIndex);
+
+label.append(input,document.createTextNode(option));
+card.appendChild(label);
+});
+});
+}
+
+// حفظ إجابة الطالب
+async function saveStudentAnswer(questionId,answer){
+if(savingAnswer)return;
+
+activeAnswers[questionId]=answer;
+savingAnswer=true;
+
+try{
+await updateDoc(doc(db,"examAttempts",activeAttemptId),{
+answers:activeAnswers,
+updatedAt:serverTimestamp()
+});
+message("examMessage","تم حفظ إجابتك.",true);
+}catch(error){
+console.error(error);
+message("examMessage","تعذر حفظ الإجابة. تحقق من الاتصال.");
+}finally{
+savingAnswer=false;
+}
+}
+
+// تسليم الامتحان
+document.getElementById("submitExamBtn").onclick=async()=>{
+if(!activeAttemptId)return;
+
+if(!confirm("هل أنت متأكد من تسليم الامتحان؟ لن تتمكن من تعديل إجاباتك بعد التسليم."))return;
+
+const btn=document.getElementById("submitExamBtn");
+btn.disabled=true;
+
+try{
+await updateDoc(doc(db,"examAttempts",activeAttemptId),{
+answers:activeAnswers,
+status:"submitted",
+submittedAt:serverTimestamp(),
+updatedAt:serverTimestamp()
+});
+
+document.getElementById("examArea").classList.add("hidden");
+message("examMessage","تم تسليم الامتحان بنجاح.",true);
+
+const user=auth.currentUser;
+if(user)await loadStudentExams(user);
+
+}catch(error){
+console.error(error);
+message("examMessage","تعذر تسليم الامتحان: "+error.message);
+}finally{
+btn.disabled=false;
+}
+};
+
+// عرض محاولات الطلاب للأستاذ
+document.getElementById("loadAttemptsBtn").onclick=async()=>{
+if(!isTeacher(auth.currentUser))return;
+
+const box=document.getElementById("teacherAttemptsList");
+box.textContent="جاري تحميل المحاولات...";
+
+try{
+const attempts=await getDocs(collection(db,"examAttempts"));
+box.replaceChildren();
+
+const submitted=attempts.docs.filter(x=>x.data().status==="submitted");
+
+if(submitted.length===0){
+box.textContent="لا توجد محاولات مسلمة حتى الآن.";
+return;
+}
+
+for(const item of submitted){
+const a=item.data();
+const card=makeCard(box,"محاولة طالب", "رقم الطالب: "+a.studentId+" — الامتحان: "+a.examId);
+
+const reviewBtn=document.createElement("button");
+reviewBtn.textContent="مراجعة وتصحيح";
+reviewBtn.onclick=()=>reviewAttempt(item.id,a,card);
+card.appendChild(reviewBtn);
+
+if(a.reviewed===true){
+const result=document.createElement("p");
+result.textContent="الدرجة المعتمدة: "+a.score+" من "+a.total;
+card.appendChild(result);
+}
+}
+
+}catch(error){
+console.error(error);
+box.textContent="تعذر تحميل المحاولات.";
+}
+};
+
+// تصحيح المحاولة من الأستاذ
+async function reviewAttempt(attemptId,attempt,card){
+try{
+const keyDoc=await getDoc(doc(db,"examAnswerKeys",attempt.examId));
+const examDoc=await getDoc(doc(db,"exams",attempt.examId));
+
+if(!keyDoc.exists()||!examDoc.exists()){
+alert("لم يتم العثور على نموذج الإجابة أو الامتحان.");
+return;
+}
+
+const keys=keyDoc.data().answers||{};
+const questions=examDoc.data().questions||[];
+const answers=attempt.answers||{};
+
+const reviewBox=document.createElement("div");
+reviewBox.className="card";
+
+let score=0;
+questions.forEach((q,index)=>{
+const correct=Number(keys[q.id]);
+const chosen=answers[q.id]===undefined?null:Number(answers[q.id]);
+const isCorrect=chosen===correct;
+
+if(isCorrect)score++;
+
+const p=document.createElement("p");
+p.textContent="السؤال "+(index+1)+": "+q.text;
+reviewBox.appendChild(p);
+
+const answer=document.createElement("p");
+answer.textContent="إجابة الطالب: "+(chosen===null?"لم يجب":q.options[chosen]);
+reviewBox.appendChild(answer);
+
+const right=document.createElement("p");
+right.textContent="الإجابة الصحيحة: "+q.options[correct];
+right.style.color="green";
+reviewBox.appendChild(right);
+
+const status=document.createElement("p");
+status.textContent=isCorrect?"صحيح":"خطأ";
+status.style.color=isCorrect?"green":"#b42318";
+reviewBox.appendChild(status);
+});
+
+const summary=document.createElement("h3");
+summary.textContent="الدرجة: "+score+" من "+questions.length;
+reviewBox.appendChild(summary);
+
+const approve=document.createElement("button");
+approve.textContent="اعتماد الدرجة";
+approve.onclick=async()=>{
+try{
+await updateDoc(doc(db,"examAttempts",attemptId),{
+score,
+total:questions.length,
+reviewed:true,
+reviewedAt:serverTimestamp()
+});
+alert("تم اعتماد الدرجة.");
+document.getElementById("loadAttemptsBtn").click();
+}catch(error){
+console.error(error);
+alert("تعذر اعتماد الدرجة.");
+}
+};
+
+reviewBox.appendChild(approve);
+card.appendChild(reviewBox);
+
+}catch(error){
+console.error(error);
+alert("تعذر مراجعة المحاولة: "+error.message);
+}
+}
+
 // متابعة حالة الدخول
 onAuthStateChanged(auth,async user=>{
 if(!user){
@@ -469,4 +992,4 @@ document.getElementById("logoutTeacherBtn").onclick=()=>signOut(auth);
 
 </script>
 </body>
-</html>
+  </html>
