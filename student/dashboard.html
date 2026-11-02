@@ -1,9 +1,12 @@
-<!DOCTYPE html><html lang="ar" dir="rtl">
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>لوحة الطالب | منصة التفوق</title>
-<link rel="stylesheet" href="../css/style.css"><style>
+<link rel="stylesheet" href="../css/style.css">
+
+<style>
 *{box-sizing:border-box}
 
 body{
@@ -183,62 +186,110 @@ body{
  color:white;
 }
 
+.refresh:disabled{
+ opacity:.65;
+ cursor:wait;
+}
+
 @media(max-width:480px){
  body{padding:12px}
  .dashboard{margin:15px auto}
  .welcome{padding:22px}
  .sections{grid-template-columns:repeat(2,1fr)}
 }
-</style></head><body><div id="loading">جاري تحميل لوحة الطالب...</div>
-<div id="loadError"></div><main class="dashboard" id="dashboard" hidden><div class="top-bar">
+</style>
+</head>
+
+<body>
+
+<div id="loading">جاري تحميل لوحة الطالب...</div>
+<div id="loadError"></div>
+
+<main class="dashboard" id="dashboard" hidden>
+
+<div class="top-bar">
 <a class="bell-button" href="notifications.html">
 <span class="bell-icon">🔔</span>
 <span>الإشعارات</span>
 <span class="unread-count" id="unreadCount">0</span>
 </a>
-</div><section class="welcome">
+</div>
+
+<section class="welcome">
 <h1>مرحباً بك 👋</h1>
 <h2 id="studentName">الطالب</h2>
 <p>أهلاً بك في منصة التفوق للدراسات الاجتماعية.</p>
 <div class="badge">🎓 نتمنى لك التفوق والنجاح</div>
-</section><section class="notification-box">
-<h2>🔔 تنبيهات المنصة</h2><div class="notification-grid"><div class="notification-item">
+</section>
+
+<section class="notification-box">
+<h2>🔔 تنبيهات المنصة</h2>
+
+<div class="notification-grid">
+
+<div class="notification-item">
 <strong id="lessonsCount">0</strong>
 <span>📚 الدروس المتاحة</span>
-</div><div class="notification-item">
+</div>
+
+<div class="notification-item">
 <strong id="examsCount">0</strong>
 <span>📝 الامتحانات المنشورة</span>
-</div><div class="notification-item">
+</div>
+
+<div class="notification-item">
 <strong id="announcementsCount">0</strong>
 <span>📢 الإعلانات</span>
-</div></div><button class="refresh" id="refreshBtn">
+</div>
+
+</div>
+
+<button class="refresh" id="refreshBtn">
 🔄 تحديث التنبيهات
 </button>
-</section><h2>أقسام المنصة</h2><section class="sections"><a class="section-card" href="lessons.html">
+</section>
+
+<h2>أقسام المنصة</h2>
+
+<section class="sections">
+
+<a class="section-card" href="lessons.html">
 <span class="icon">📚</span>
 <h3>الدروس</h3>
 <span class="card-count" id="lessonsBadge">0 درس</span>
-</a><a class="section-card" href="exams.html">
+</a>
+
+<a class="section-card" href="exams.html">
 <span class="icon">📝</span>
 <h3>الامتحانات</h3>
 <span class="card-count" id="examsBadge">0 امتحان</span>
-</a><a class="section-card" href="grades.html">
+</a>
+
+<a class="section-card" href="grades.html">
 <span class="icon">📊</span>
 <h3>الدرجات</h3>
-</a><a class="section-card" href="announcements.html">
+</a>
+
+<a class="section-card" href="announcements.html">
 <span class="icon">📢</span>
 <h3>الإعلانات</h3>
 <span class="card-count" id="announcementsBadge">0 إعلان</span>
-</a><a class="section-card" href="profile.html">
+</a>
+
+<a class="section-card" href="profile.html">
 <span class="icon">👤</span>
 <h3>الملف الشخصي</h3>
-</a><!-- المعلم الذكي --><a class="section-card" href="ai-tutor.html">
-<span class="icon">🤖</span>
-<h3>المعلم الذكي</h3>
-<span class="card-count">اسأل وتعلّم</span>
-</a></section><button class="logout" id="logoutBtn">
+</a>
+
+</section>
+
+<button class="logout" id="logoutBtn">
 تسجيل الخروج
-</button></main><script type="module">
+</button>
+
+</main>
+
+<script type="module">
 
 import {auth,db} from "../firebase-config.js";
 
@@ -276,16 +327,27 @@ function setCount(id,value){
 document.getElementById(id).textContent=value;
 }
 
+function resetRefreshButton(){
+
+refreshBtn.disabled=false;
+refreshBtn.textContent="🔄 تحديث التنبيهات";
+
+}
+
 function getReadItems(){
 
 try{
+
 return JSON.parse(
 localStorage.getItem(
 "tafawok_read_notifications_"+currentUser.uid
 )||"[]"
 );
+
 }catch{
+
 return [];
+
 }
 
 }
@@ -342,6 +404,9 @@ unreadCount.style.display="none";
 
 loadError.style.display="none";
 
+// إصلاح زر التنبيهات بعد اكتمال تحميل البيانات
+resetRefreshButton();
+
 }
 
 function stopLiveUpdates(){
@@ -359,6 +424,11 @@ function startLiveUpdates(){
 if(!currentUser)return;
 
 stopLiveUpdates();
+
+// تصفير البيانات القديمة قبل بدء الاستماع
+lessonsSnap=null;
+announcementsSnap=null;
+examsSnap=null;
 
 refreshBtn.disabled=true;
 refreshBtn.textContent="جاري تحميل التنبيهات...";
@@ -439,8 +509,7 @@ loadError.style.display="block";
 loadError.textContent=
 "تعذر تحديث التنبيهات مباشرة. تحقق من اتصال الإنترنت.";
 
-refreshBtn.disabled=false;
-refreshBtn.textContent="🔄 تحديث التنبيهات";
+resetRefreshButton();
 
 }
 
@@ -497,6 +566,8 @@ console.error(error);
 loading.textContent=
 "حدث خطأ أثناء تحميل البيانات. تأكد من اتصال الإنترنت.";
 
+resetRefreshButton();
+
 }
 
 });
@@ -508,14 +579,8 @@ if(!currentUser)return;
 refreshBtn.disabled=true;
 refreshBtn.textContent="جاري التحديث...";
 
-updateDashboard();
-
-setTimeout(()=>{
-
-refreshBtn.disabled=false;
-refreshBtn.textContent="🔄 تحديث التنبيهات";
-
-},500);
+// إعادة تشغيل الاستماع للحصول على أحدث البيانات
+startLiveUpdates();
 
 });
 
@@ -538,5 +603,7 @@ alert("تعذر تسجيل الخروج. حاول مرة أخرى.");
 
 window.addEventListener("pagehide",stopLiveUpdates);
 
-</script></body>
+</script>
+
+</body>
 </html>
