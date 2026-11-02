@@ -4,6 +4,11 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth
 
 import { getFirestore } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
+import {
+  initializeAppCheck,
+  ReCaptchaEnterpriseProvider
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app-check.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyAvC3dWS5YGFb80pfXfZZx8WKh1MEfasNU",
   authDomain: "tafawok-social-platform.firebaseapp.com",
@@ -15,5 +20,14 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
+// تفعيل App Check
+export const appCheck = initializeAppCheck(app, {
+  provider: new ReCaptchaEnterpriseProvider(
+    "6LeUgwsuAAAAAAn-6DJHuU9SJSftYJ2exCirhYop"
+  ),
+  isTokenAutoRefreshEnabled: true
+});
+
+// خدمات Firebase الحالية
 export const auth = getAuth(app);
 export const db = getFirestore(app);
